@@ -7,6 +7,6 @@ def getPrime(n):
 
 print('Even numbers!')
 
-print('Hi there!')
+
 
 
