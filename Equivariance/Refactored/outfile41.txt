@@ -1,0 +1,350 @@
+Epoch 0
+Loss: 24424.2962748
+Training Loss: 11230.5567065
+Epoch 1
+Loss: 9616.94340561
+Training Loss: 10693.0185706
+Epoch 2
+Loss: 7323.03824214
+Training Loss: 14730.2930427
+Epoch 3
+Loss: 8253.38347784
+Training Loss: 8798.11206684
+Epoch 4
+Loss: 7755.33709781
+Training Loss: 11515.9137657
+Epoch 5
+Loss: 6941.8421555
+Training Loss: 11062.7797283
+Epoch 6
+Loss: 5526.04284388
+Training Loss: 10468.4176217
+Epoch 7
+Loss: 6178.40616502
+Training Loss: 6990.54626567
+Epoch 8
+Loss: 6824.07610271
+Training Loss: 8254.52587686
+Epoch 9
+Loss: 9145.99043619
+Training Loss: 13514.5067001
+Epoch 10
+Loss: 7147.61748381
+Training Loss: 14579.3603596
+Epoch 11
+Loss: 18541.0347302
+Training Loss: 7014.69126384
+Epoch 12
+Loss: 5540.61414677
+Training Loss: 10177.3102945
+Epoch 13
+Loss: 6216.45659514
+Training Loss: 11964.0558195
+Epoch 14
+Loss: 16007.8860733
+Training Loss: 6325.59123918
+Epoch 15
+Loss: 3792.85643288
+Training Loss: 11657.711093
+Epoch 16
+Loss: 5477.00187509
+Training Loss: 4581.09552596
+Epoch 17
+Loss: 4432.37733208
+Training Loss: 4271.9355534
+Epoch 18
+Loss: 4146.30300768
+Training Loss: 4123.36363276
+Epoch 19
+Loss: 4062.36670848
+Training Loss: 4073.35671212
+Epoch 20
+Loss: 4016.69740137
+Training Loss: 4037.95474232
+Epoch 21
+Loss: 3986.44894856
+Training Loss: 4007.33833816
+Epoch 22
+Loss: 3947.99183773
+Training Loss: 3978.98909034
+Epoch 23
+Loss: 3933.18137711
+Training Loss: 3949.76537154
+Epoch 24
+Loss: 3899.7342587
+Training Loss: 3925.15820003
+Epoch 25
+Loss: 3874.88887266
+Training Loss: 3899.47886344
+Epoch 26
+Loss: 3845.4200762
+Training Loss: 3874.86518951
+Epoch 27
+Loss: 3813.40829439
+Training Loss: 3852.24907666
+Epoch 28
+Loss: 3795.31335124
+Training Loss: 3828.89502455
+Epoch 29
+Loss: 3769.30519769
+Training Loss: 3806.92681736
+Epoch 30
+Loss: 3744.6495921
+Training Loss: 3785.69875766
+Epoch 31
+Loss: 3757.34273914
+Training Loss: 3763.13166921
+Epoch 32
+Loss: 3709.39357242
+Training Loss: 3743.78738058
+Epoch 33
+Loss: 3682.56889451
+Training Loss: 3724.2709188
+Epoch 34
+Loss: 3664.73327527
+Training Loss: 3706.4078756
+Epoch 35
+Loss: 3644.0463473
+Training Loss: 3686.06067598
+Epoch 36
+Loss: 3624.97316738
+Training Loss: 3668.52211599
+Epoch 37
+Loss: 3606.29403166
+Training Loss: 3650.62793045
+Epoch 38
+Loss: 3598.71965635
+Training Loss: 3632.62475733
+Epoch 39
+Loss: 3608.20807912
+Training Loss: 3616.84399099
+Epoch 40
+Loss: 3567.08547929
+Training Loss: 3598.51185558
+Epoch 41
+Loss: 3559.20183472
+Training Loss: 3583.45867301
+Epoch 42
+Loss: 3525.00548168
+Training Loss: 3568.09165125
+Epoch 43
+Loss: 3504.16205741
+Training Loss: 3550.65022259
+Epoch 44
+Loss: 3503.99184109
+Training Loss: 3533.26003121
+Epoch 45
+Loss: 3481.40300084
+Training Loss: 3519.60578164
+Epoch 46
+Loss: 3456.58124646
+Training Loss: 3503.41411249
+Epoch 47
+Loss: 3440.06269593
+Training Loss: 3488.28921309
+Epoch 48
+Loss: 3429.02488618
+Training Loss: 3474.70002636
+Epoch 49
+Loss: 3412.37558408
+Training Loss: 3459.167263
+Epoch 50
+Loss: 3397.7919681
+Training Loss: 3444.90977784
+Epoch 51
+Loss: 3382.8566977
+Training Loss: 3430.37288135
+Epoch 52
+Loss: 3366.85543154
+Training Loss: 3415.17728455
+Epoch 53
+Loss: 3372.15833106
+Training Loss: 3402.47204433
+Epoch 54
+Loss: 3350.69436107
+Training Loss: 3387.73832524
+Epoch 55
+Loss: 3324.68172968
+Training Loss: 3374.2055001
+Epoch 56
+Loss: 3312.183759
+Training Loss: 3361.07041797
+Epoch 57
+Loss: 3299.08987078
+Training Loss: 3344.82098718
+Epoch 58
+Loss: 3283.34075553
+Training Loss: 3333.27656578
+Epoch 59
+Loss: 3272.78029714
+Training Loss: 3319.4619811
+Epoch 60
+Loss: 3259.36174983
+Training Loss: 3306.32668114
+Epoch 61
+Loss: 3242.05216589
+Training Loss: 3294.64535612
+Epoch 62
+Loss: 3238.32579091
+Training Loss: 3280.64784166
+Epoch 63
+Loss: 3216.37121865
+Training Loss: 3268.19928405
+Epoch 64
+Loss: 3221.3855085
+Training Loss: 3256.45258161
+Epoch 65
+Loss: 3224.17632571
+Training Loss: 3243.62170709
+Epoch 66
+Loss: 3177.6849752
+Training Loss: 3229.36216496
+Epoch 67
+Loss: 3167.9154598
+Training Loss: 3217.8821996
+Epoch 68
+Loss: 3157.01722836
+Training Loss: 3207.03561638
+Epoch 69
+Loss: 3143.33335986
+Training Loss: 3193.75568836
+Epoch 70
+Loss: 3152.80288792
+Training Loss: 3182.2212727
+Epoch 71
+Loss: 3121.44394734
+Training Loss: 3171.20352856
+Epoch 72
+Loss: 3108.28545374
+Training Loss: 3158.08911368
+Epoch 73
+Loss: 3094.96309788
+Training Loss: 3147.30253378
+Epoch 74
+Loss: 3090.32444983
+Training Loss: 3134.54584355
+Epoch 75
+Loss: 3069.57803226
+Training Loss: 3123.60582902
+Epoch 76
+Loss: 3063.0550237
+Training Loss: 3113.24426552
+Epoch 77
+Loss: 3045.83083735
+Training Loss: 3100.73647954
+Epoch 78
+Loss: 3036.74218265
+Training Loss: 3091.85952176
+Epoch 79
+Loss: 3027.30795727
+Training Loss: 3077.93978985
+Epoch 80
+Loss: 3031.80312074
+Training Loss: 3068.90644074
+Epoch 81
+Loss: 3016.45166827
+Training Loss: 3058.98342313
+Epoch 82
+Loss: 3006.50293064
+Training Loss: 3048.87637012
+Epoch 83
+Loss: 2993.28507343
+Training Loss: 3037.66302474
+Epoch 84
+Loss: 2994.14081056
+Training Loss: 3026.53936684
+Epoch 85
+Loss: 2966.88518799
+Training Loss: 3015.08971333
+Epoch 86
+Loss: 2952.71687906
+Training Loss: 3005.89589341
+Epoch 87
+Loss: 2953.65876075
+Training Loss: 2996.31658308
+Epoch 88
+Loss: 2961.28337755
+Training Loss: 2986.90165763
+Epoch 89
+Loss: 2921.4210781
+Training Loss: 2977.73214871
+Epoch 90
+Loss: 2918.41699024
+Training Loss: 2967.72955863
+Epoch 91
+Loss: 2907.28036238
+Training Loss: 2958.52868926
+Epoch 92
+Loss: 2905.50934482
+Training Loss: 2949.5667477
+Epoch 93
+Loss: 2884.80159723
+Training Loss: 2940.13458375
+Epoch 94
+Loss: 2902.4493809
+Training Loss: 2930.2549538
+Epoch 95
+Loss: 2872.79717313
+Training Loss: 2919.71372683
+Epoch 96
+Loss: 2857.80674958
+Training Loss: 2914.1812269
+Epoch 97
+Loss: 2849.43539821
+Training Loss: 2903.54035586
+Epoch 98
+Loss: 2850.41326628
+Training Loss: 2895.42583265
+Epoch 99
+Loss: 2849.57320359
+Training Loss: 2887.86431006
+Epoch 100
+Loss: 2918.90396779
+Training Loss: 2878.12076308
+Epoch 101
+Loss: 2825.51792212
+Training Loss: 2868.89387889
+Epoch 102
+Loss: 2807.57845066
+Training Loss: 2860.74544549
+Epoch 103
+Loss: 2821.87705796
+Training Loss: 2855.08838974
+Epoch 104
+Loss: 2818.37471472
+Training Loss: 2846.20377649
+Epoch 105
+Loss: 2869.16890485
+Training Loss: 2838.96253805
+Epoch 106
+Loss: 2782.62665196
+Training Loss: 2832.56235744
+Epoch 107
+Loss: 2794.30618779
+Training Loss: 2824.4225488
+Epoch 108
+Loss: 2768.5988385
+Training Loss: 2815.38014096
+Epoch 109
+Loss: 2756.31704371
+Training Loss: 2809.56449311
+Epoch 110
+Loss: 2784.93788484
+Training Loss: 2801.22480041
+Epoch 111
+Loss: 2740.27080856
+Training Loss: 2793.88076065
+Epoch 112
+Loss: 2736.21557019
+Training Loss: 2788.52852448
+Epoch 113
+Loss: 2799.79846111
+Training Loss: 2777.21180956
+Epoch 114
+Loss: 2724.13077162
+Training Loss: 2770.66282003
+Epoch 115
+Loss: 2715.43102069
+Training Loss: 2765.60002115
+Epoch 116
+Loss: 2707.51917924
