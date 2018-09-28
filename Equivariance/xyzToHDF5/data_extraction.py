@@ -5,7 +5,7 @@ import h5py
 import pdb
 
 def to_float(s):
-    if 'e' not in s:
+    if '^' not in s:
         return float(s)
     else:
         return 0
@@ -38,14 +38,18 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
 
     positions = np.array(df.iloc[:,2:5])
     ids = np.array(df['id'])
+    sorted_ids, indices = np.unique(ids, return_index=True)
+
+    assert(sorted_ids.size == N)
+    
     elements = np.array(df['element'])
     duplicate_U0s = np.array(df['U0'])
 
-    for i in range(np.max(ids)):
-        molecule_positions = positions[ids==i+1]
+    for i in sorted_ids:
+        molecule_positions = positions[ids==i]
 
         #Center the molecule at the origin, so it fits in the smallest possible cube
-        positions[ids==i+1] -= (np.max(molecule_positions, axis=0) +
+        positions[ids==i] -= (np.max(molecule_positions, axis=0) +
                                 np.min(molecule_positions, axis=0))/2
 
 
@@ -66,9 +70,9 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
 
     normalizations = 1/np.sqrt(2*np.pi*radii**2)
 
-
-    for n in np.arange(N):
-        molecule_coords = positions[ids==1+n]
+    n = 0
+    for i in sorted_ids:
+        molecule_coords = positions[ids==i]
         image = np.zeros((grid_points,grid_points,grid_points, atoms))
         for k in np.arange(molecule_coords.shape[0]):
             x_pos,y_pos,z_pos = molecule_coords[k,0], molecule_coords[k,1], molecule_coords[k,2] 
@@ -81,12 +85,13 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
             image[:, :, :, element] += addition
         
         molecule_fields[n] = image
+        n += 1
 
 
-    sorted_U0s, indices = np.unique(duplicate_U0s, return_index=True)
-    assert(sorted_U0s.size == N)
 
     U0s = np.array([duplicate_U0s[l] for l in indices], dtype=np.dtype('f')).reshape((-1, 1))
+
+    assert(U0s.size == N)
 
     g = h5py.File(filename, 'a')
     dset = g.require_dataset('molecule_fields', (total_molecules, 20, 20, 20, 5), dtype=np.dtype("f"))
@@ -98,5 +103,14 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
 
     g.close()
 
-xyzToHDF5(0, 10, "data.hdf5", 102)
+
+total_no_of_molecules = 133885
+total_no_of_molecules = 10000
+divisions = 100
+splits = np.array_split(np.arange(total_no_of_molecules), divisions)
+
+for sub in splits:
+    print(sub[0])
+    xyzToHDF5(sub[0], len(sub), "data.hdf5", total_no_of_molecules)
+
 
