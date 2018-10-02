@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pickle
-import h5py
 import pdb
+import tensorflow as tf
 
 def to_float(s):
     if '^' not in s:
@@ -10,7 +10,10 @@ def to_float(s):
     else:
         return 0
 
-def xyzToHDF5(N_start, N, filename, total_molecules):
+def _bytes_feature(value):
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def xyzToTFRecord(N_start, N):
     df = pd.DataFrame(columns=['id', 'element', 'x', 'y', 'z', 'U0'])
 
     for m in range(N_start, N_start + N):
@@ -66,7 +69,7 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
 
     radii = np.array([0.75, 0.31, 0.66, 0.71, 0.57]) #covalent radii of elements
     elements_dict = {'C': 0, 'H': 1, 'O': 2, 'N': 3, 'F': 4} 
-    molecule_fields = np.zeros((N,grid_points, grid_points, grid_points, atoms))
+    molecule_fields = np.zeros((N,grid_points * grid_points * grid_points * atoms))
 
     normalizations = 1/np.sqrt(2*np.pi*radii**2)
 
@@ -84,33 +87,34 @@ def xyzToHDF5(N_start, N, filename, total_molecules):
             
             image[:, :, :, element] += addition
         
-        molecule_fields[n] = image
+        molecule_fields[n] = image.reshape((1, -1))
         n += 1
-
 
 
     U0s = np.array([duplicate_U0s[l] for l in indices], dtype=np.dtype('f')).reshape((-1, 1))
 
     assert(U0s.size == N)
+    
+    #Write to TFRecord file
+    tf_filename = "TFRecords/compiled" + str(N_start) + "_" + str(N)
+    writer = tf.python_io.TFRecordWriter(tf_filename)
 
-    g = h5py.File(filename, 'a')
-    dset = g.require_dataset('molecule_fields', (total_molecules, 20, 20, 20, 5), dtype=np.dtype("f"))
-    dset2 = g.require_dataset('U0',  (total_molecules, 1), dtype=np.dtype('f'))
-                    
-                    
-    dset[N_start:N_start+N] = molecule_fields
-    dset2[N_start:N_start+N] = U0s
+    molecule_fields_raw = molecule_fields.tostring()
+    U0s_raw = U0s.tostring()
 
-    g.close()
+    example = tf.train.Example(features=tf.train.Features(feature={
+        'molecule_fields': _bytes_feature(molecule_fields_raw),
+        'U0s_raw': _bytes_feature(molecule_fields_raw)}))
 
+    print("Writing", tf_filename, "to file")
+    writer.write(example.SerializeToString())
 
 total_no_of_molecules = 133885
-total_no_of_molecules = 10000
-divisions = 100
+total_no_of_molecules = 365
+divisions = 3
 splits = np.array_split(np.arange(total_no_of_molecules), divisions)
 
 for sub in splits:
-    print(sub[0])
-    xyzToHDF5(sub[0], len(sub), "data.hdf5", total_no_of_molecules)
+    xyzToTFRecord(sub[0], len(sub))
 
 
