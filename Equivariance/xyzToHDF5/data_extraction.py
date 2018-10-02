@@ -93,6 +93,10 @@ def xyzToTFRecord(N_start, N):
 
     U0s = np.array([duplicate_U0s[l] for l in indices], dtype=np.dtype('f')).reshape((-1, 1))
 
+
+    U0s = U0s.astype(np.float32)
+    molecule_fields = molecule_fields.astype(np.float32)
+
     assert(U0s.size == N)
     assert(molecule_fields.shape[0] == N)
 
