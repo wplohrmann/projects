@@ -28,10 +28,12 @@ def input_fn():
         return next_element
 
 def model_fn(features, labels, mode, params):
+    print(features)
     net = tf.feature_column.input_layer(features, params['feature_columns'])
     y_ = inference(net)
     if mode == tf.ModeKeys.PREDICT:
-        return tf.estimator.EstimatorSpec(mode, y_)
+        predictions = {'U0': y_ }
+        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
     loss = tf.reduce_mean(tf.square(y_-y), name='loss')
     hartree = 627.5 #kcal/mol
@@ -39,11 +41,17 @@ def model_fn(features, labels, mode, params):
     tf.summary.scalar('RME', rme)
 
     if mode == tf.ModeKeys.EVAL:
-        return tf.estimator.EstimatorSpec(mode, loss=loss, eval_metric_ops=loss)
+        return tf.estimator.EstimatorSpec(mode, loss=loss, eval_metric_ops=rme)
 
     if mode == tf.ModeKeys.TRAIN:
         optimizer = tf.train.AdamOptimizer(params['lr'])
         train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
 
+
+distribution = tf.contrib.distribute.MirroredStrategy()
+config = tf.estimator.RunConfig(train_distribute=distribution)
+classifier = tf.estimator.Estimator(model_fn=model_fn, config=config)
+classifier.train(input_fn=input_fn)
+classifier.evaluate(input_fn=input_fn)
 
