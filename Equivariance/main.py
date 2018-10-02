@@ -3,13 +3,9 @@ import glob
 
 filenames = glob.glob("TFRecords/*")
 
-def parser(filename_queue):
-    reader = tf.TFRecordReader()
-
-    _, serialized_example = reader.read(filename_queue)
-
+def parser(example_proto):
     features = tf.parse_single_example(
-            serialized_example,
+            example_proto,
             features={
                 'molecule_fields_raw': tf.FixedLenFeature([], tf.string),
                 'U0s_raw': tf.FixedLenFeature([], tf.string)})
@@ -19,4 +15,18 @@ def parser(filename_queue):
     X = tf.reshape(X_1d, (-1, 20, 20, 20, 5))
     y = tf.reshape(y_1d, (-1, 1))
     
+
     return X, y
+
+dataset = tf.data.TFRecordDataset(filenames[0])
+dataset = dataset.map(parser)
+
+iterator = dataset.make_one_shot_iterator()
+
+next_element = iterator.get_next()
+
+
+with tf.Session() as sess:
+    arrs = sess.run(next_element)
+    for arr in arrs:
+        print(arr.shape)

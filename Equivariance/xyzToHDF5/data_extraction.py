@@ -94,7 +94,8 @@ def xyzToTFRecord(N_start, N):
     U0s = np.array([duplicate_U0s[l] for l in indices], dtype=np.dtype('f')).reshape((-1, 1))
 
     assert(U0s.size == N)
-    
+    assert(molecule_fields.shape[0] == N)
+
     #Write to TFRecord file
     tf_filename = "TFRecords/compiled" + str(N_start) + "_" + str(N)
     writer = tf.python_io.TFRecordWriter(tf_filename)
@@ -103,8 +104,8 @@ def xyzToTFRecord(N_start, N):
     U0s_raw = U0s.tostring()
 
     example = tf.train.Example(features=tf.train.Features(feature={
-        'molecule_fields': _bytes_feature(molecule_fields_raw),
-        'U0s_raw': _bytes_feature(molecule_fields_raw)}))
+        'molecule_fields_raw': _bytes_feature(molecule_fields_raw),
+        'U0s_raw': _bytes_feature(U0s_raw)}))
 
     print("Writing", tf_filename, "to file")
     writer.write(example.SerializeToString())
