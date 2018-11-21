@@ -3,7 +3,7 @@ import glob
 from QCP_model import inference
 
 filenames = glob.glob("TFRecords/*")
-def input_fn():
+def input_fn(features, labels, batch_size):
     def parser(example_proto):
         features = tf.parse_single_example(
                 example_proto,
@@ -13,19 +13,19 @@ def input_fn():
         X_1d = tf.decode_raw(features['molecule_fields_raw'], tf.float32)
         y_1d = tf.decode_raw(features['U0s_raw'], tf.float32)
 
-        X = tf.reshape(X_1d, (-1, 20, 20, 20, 5))
-        y = tf.reshape(y_1d, (-1, 1))
+        X = tf.reshape(X_1d, (20, 20, 20, 5))
+        y = tf.reshape(y_1d, (1,))
 
         return X, y
 
-        dataset = tf.data.TFRecordDataset(filenames[0])
-        dataset = dataset.map(parser)
+    dataset = tf.data.TFRecordDataset(filenames[0])\
+                     .map(parser)\
+                     .repeat(3)\
+                     .shuffle(50)\
+                     .batch(10)
 
-        iterator = dataset.make_one_shot_iterator()
-
-        next_element = iterator.get_next()
-
-        return next_element
+    
+    return dataset
 
 def model_fn(features, labels, mode, params):
     print(features)
@@ -49,9 +49,12 @@ def model_fn(features, labels, mode, params):
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
 
 
-distribution = tf.contrib.distribute.MirroredStrategy()
-config = tf.estimator.RunConfig(train_distribute=distribution)
-classifier = tf.estimator.Estimator(model_fn=model_fn, config=config)
-classifier.train(input_fn=input_fn)
-classifier.evaluate(input_fn=input_fn)
+ds = input_fn(0, 0, 0)
+print(ds)
+
+#distribution = tf.contrib.distribute.MirroredStrategy()
+#config = tf.estimator.RunConfig(train_distribute=distribution)
+#classifier = tf.estimator.Estimator(model_fn=model_fn, config=config)
+#classifier.train(input_fn=input_fn)
+#classifier.evaluate(input_fn=input_fn)
 

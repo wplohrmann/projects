@@ -1,0 +1,30 @@
+Concerns when writing a web API:
+
+- Take a number of arguments in the form of GET/POST requests
+- Deserialize arguments
+- Deal with arguments (handlers) and formulate a response
+- Serialize the response and send it back to the browser/client
+
+- Documentation
+
+Servant will either help or completely deal with all of these concerns, so one can focus completely on just writing the API logic.
+
+A web API as a type:
+
+- Use the type keyword with (:>)-separated parameters to specify an endpoint.
+- All endpoints must end with a verb (get/post/delete etc.)
+- Multiple endpoints are separated by (:<|>)
+- Use Capture to take variable input from the URL
+- Can also use QueryParam, QueryParams and QueryFlag
+- Lots of different content types. Need a way to serialize/deserialize, using type classes.
+- Raw as an endpoint just serves a static page from a file.
+
+
+Serving an API:
+
+- Specify the API as a type
+- Write a handler in the type family `Server API`, where `API` is the type already specified.
+- Construct and `Application` object, with `serve`. `serve` takes two arguments, an API and a handler.
+- Because a type can't be passed in to a function, a dummy `Proxy` object is passed in instead withe appropriate type.
+- Finally, run the application through main
+- The Handler monad: IO (Either ServantErr a)
