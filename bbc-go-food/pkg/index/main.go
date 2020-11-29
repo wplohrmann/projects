@@ -1,6 +1,7 @@
 package index
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -12,7 +13,8 @@ import (
 )
 
 func getUrlsFromPage(n int) ([]string, error) {
-    url := fmt.Sprintf("https://www.bbcgoodfood.com/search/page/%d?sort=-date", n)
+    base_url := "https://www.bbcgoodfood.com"
+    url := fmt.Sprintf("%s/search/page/%d?sort=-date", base_url, n)
     fmt.Printf("Fetching URL %s\n", url)
     resp, err := http.Get(url)
     if err != nil {
@@ -52,7 +54,7 @@ func getUrlsFromPage(n int) ([]string, error) {
                     }
                 }
                 if correctUrl && maybeUrl != "" {
-                    urls = append(urls, maybeUrl)
+                    urls = append(urls, base_url + maybeUrl)
                 }
             }
         }
@@ -69,8 +71,56 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
     if resp.StatusCode != 200 {
         return nil, errors.New(resp.Status)
     }
+    z := html.NewTokenizer(resp.Body)
+    for {
+        tt := z.Next()
 
-    return &models.Recipe{}, nil // Dummy return to satisfy compiler
+        switch {
+        case tt == html.ErrorToken: {
+            return nil, errors.New("Reached end of page without finding recipe")
+        }
+        case tt == html.StartTagToken: {
+            t := z.Token()
+
+            isAnchor := t.Data == "script"
+            if isAnchor {
+                for _, a := range t.Attr {
+                    if a.Key == "type" {
+                        if a.Val == "application/ld+json" {
+                            var maybeRecipe struct {
+                                SchemaType string `json:"@type"`
+                                Name string
+                                Image struct { Url string }
+                                RecipeIngredient []string
+                                RecipeInstructions []struct { Text string }
+                            }
+                            z.Next()
+                            if err := json.Unmarshal(z.Raw(), &maybeRecipe); err != nil {
+                                fmt.Printf("Error: %s\n", err)
+                                return nil, err
+                            }
+                            fmt.Printf("%s\n", maybeRecipe.SchemaType)
+                            if maybeRecipe.SchemaType == "Recipe" {
+                                parsedSteps := []string{}
+                                p_len := len("<p>")
+                                for _, step := range maybeRecipe.RecipeInstructions {
+                                    parsedSteps = append(parsedSteps, step.Text[p_len:len(step.Text)-p_len-1])
+                                }
+                                return &models.Recipe{
+                                    Title: maybeRecipe.Name,
+                                    ImageUrl: maybeRecipe.Image.Url,
+                                    Ingredients: maybeRecipe.RecipeIngredient,
+                                    Url: url,
+                                    Steps: parsedSteps,
+                                }, nil
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        }
+    }
 }
 
 func IndexRecipes() {
@@ -78,5 +128,13 @@ func IndexRecipes() {
     if err != nil {
         log.Fatal(err)
     }
-    getRecipeFromPage(urls[0])
+    recipe, err := getRecipeFromPage(urls[0])
+    if err != nil {
+        log.Fatal(err)
+    }
+    bytes, err := json.MarshalIndent(recipe, "", "    ")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s\n", bytes)
 }

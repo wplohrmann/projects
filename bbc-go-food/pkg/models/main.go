@@ -1,7 +1,9 @@
 package models
 
 type Recipe struct {
-    title string
-    steps []string
-    url string
+    Title string `json:"title"`
+    Steps []string `json:"steps"`
+    ImageUrl string `json:"image_url"`
+    Url string `json:"url"`
+    Ingredients []string `json:"ingredients"`
 }
