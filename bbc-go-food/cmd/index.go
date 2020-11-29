@@ -13,7 +13,7 @@ func init() {
 
 var indexCmd = &cobra.Command{
     Use: "index",
-    Short: "Download recipes that have not been already",
+    Short: "Download recipes not already downloaded",
     Run: func(cmd *cobra.Command, args []string) {
         fmt.Println("Dummy index!")
         index.IndexRecipes()
