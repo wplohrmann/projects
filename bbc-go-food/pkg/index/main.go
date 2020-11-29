@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
 )
@@ -102,9 +103,8 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
                             fmt.Printf("%s\n", maybeRecipe.SchemaType)
                             if maybeRecipe.SchemaType == "Recipe" {
                                 parsedSteps := []string{}
-                                p_len := len("<p>")
                                 for _, step := range maybeRecipe.RecipeInstructions {
-                                    parsedSteps = append(parsedSteps, step.Text[p_len:len(step.Text)-p_len-1])
+                                    parsedSteps = append(parsedSteps, strip.StripTags(step.Text))
                                 }
                                 return &models.Recipe{
                                     Title: maybeRecipe.Name,
