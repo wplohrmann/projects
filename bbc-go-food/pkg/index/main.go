@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
+	"github.com/jmoiron/sqlx"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
 )
@@ -137,4 +138,8 @@ func IndexRecipes() {
         log.Fatal(err)
     }
     fmt.Printf("%s\n", bytes)
+
+    db, err := sqlx.Connect("sqlite3", ":memory:")
+    recipeDB := models.RecipeDB{DB: db}
+    models.InitDB(recipeDB)
 }
