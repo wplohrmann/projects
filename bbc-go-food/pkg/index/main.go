@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
 )
@@ -143,7 +145,19 @@ func IndexRecipes() {
 	}
 	fmt.Printf("%s\n", bytes)
 
-	db, err := sqlx.Connect("sqlite3", ":memory:")
+	dbPath := "recipes.sqlite"
+	err = os.Remove(dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := sqlx.Connect("sqlite3", dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 	recipeDB := models.RecipeDB{DB: db}
 	models.InitDB(recipeDB)
+	err = models.AddRecipe(recipeDB, recipe)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
