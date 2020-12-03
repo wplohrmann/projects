@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func getUrlsFromPage(n int) ([]string, error) {
@@ -108,18 +109,14 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
 								}
 								fmt.Printf("%s\n", maybeRecipe.SchemaType)
 								if maybeRecipe.SchemaType == "Recipe" {
-									parsedSteps := []models.Step{}
-									for i, step := range maybeRecipe.RecipeInstructions {
-										parsedSteps = append(parsedSteps, models.Step{Number: uint(i), Text: strip.StripTags(step.Text)})
-									}
-									parsedIngredients := []models.Ingredient{}
-									for _, ingredient := range maybeRecipe.RecipeIngredient {
-										parsedIngredients = append(parsedIngredients, models.Ingredient{Text: ingredient})
+									parsedSteps := []string{}
+									for _, step := range maybeRecipe.RecipeInstructions {
+										parsedSteps = append(parsedSteps, strip.StripTags(step.Text))
 									}
 									return &models.Recipe{
 										Title:       maybeRecipe.Name,
 										ImageUrl:    maybeRecipe.Image.Url,
-										Ingredients: parsedIngredients,
+										Ingredients: maybeRecipe.RecipeIngredient,
 										Url:         url,
 										Steps:       parsedSteps,
 									}, nil
@@ -148,16 +145,18 @@ func IndexRecipes() {
 	}
 	fmt.Printf("%s\n", bytes)
 
-	dsn := "user=william password=gorm dbname=gorm port=5432"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dbPath := "recipes.sqlite"
+	err = os.Remove(dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := sqlx.Connect("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	recipeDB := models.RecipeDB{DB: db}
-	recipeDB.Init()
-	fmt.Println("Hello")
-	err = recipeDB.AddRecipe(recipe)
-	fmt.Println("Hello")
+	models.InitDB(recipeDB)
+	err = models.AddRecipe(recipeDB, recipe)
 	if err != nil {
 		log.Fatal(err)
 	}
