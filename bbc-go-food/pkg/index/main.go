@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
 )
@@ -145,12 +144,8 @@ func IndexRecipes() {
 	}
 	fmt.Printf("%s\n", bytes)
 
-	dbPath := "recipes.sqlite"
-	err = os.Remove(dbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	db, err := sqlx.Connect("sqlite3", dbPath)
+	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
+	db, err := sqlx.Connect("postgres", dbAddress)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -67,6 +67,9 @@ func InitDB(db RecipeDB) error {
 
 func AddRecipe(db RecipeDB, recipe *Recipe) error {
 	result, err := db.DB.Exec("INSERT INTO recipe (title, image_url, url) VALUES (?, ?, ?)", recipe.Title, recipe.ImageUrl, recipe.Url)
+	if err != nil {
+		return errors.Wrap(err, "Failed to insert recipe")
+	}
 	recipe_id, err := result.LastInsertId()
 	if err != nil {
 		return err
