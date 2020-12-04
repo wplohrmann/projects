@@ -2,12 +2,12 @@ package index
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
+	"github.com/pkg/errors"
 	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -150,7 +150,10 @@ func IndexRecipes() {
 		log.Fatal(err)
 	}
 	recipeDB := models.RecipeDB{DB: db}
-	models.InitDB(recipeDB)
+	err = models.InitDB(recipeDB)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "Failed to initiate database"))
+	}
 	err = models.AddRecipe(recipeDB, recipe)
 	if err != nil {
 		log.Fatal(err)

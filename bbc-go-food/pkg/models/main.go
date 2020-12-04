@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -24,24 +22,22 @@ type dbIngredient struct {
 	Text string `json:"text"`
 }
 
-const recipeSchema = `CREATE TABLE recipe (
-	recipe_id integer PRIMARY KEY AUTOINCREMENT,
+const recipeSchema = `CREATE TABLE recipes (
+	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     title text,
     image_url text,
     url text
 	);`
 
-const stepSchema = `CREATE TABLE step (
+const stepSchema = `CREATE TABLE steps (
     text text,
     number integer,
-	recipe_id integer NOT NULL,
-	FOREIGN KEY(recipe_id) REFERENCES recipe(recipe_id)
+	recipe_id uuid references recipes(id)
 	);`
 
-const ingredientSchema = `CREATE TABLE ingredient (
+const ingredientSchema = `CREATE TABLE ingredients (
     text text,
-	recipe_id integer NOT NULL,
-	FOREIGN KEY(recipe_id) REFERENCES recipe(recipe_id)
+	recipe_id uuid references recipes(id)
 	);`
 
 type RecipeDB struct {
@@ -49,6 +45,7 @@ type RecipeDB struct {
 }
 
 func InitDB(db RecipeDB) error {
+	// TODO: Don't recreate database every time
 	_, err := db.DB.Exec(recipeSchema)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initiate recipe table:")
@@ -66,11 +63,11 @@ func InitDB(db RecipeDB) error {
 }
 
 func AddRecipe(db RecipeDB, recipe *Recipe) error {
-	result, err := db.DB.Exec("INSERT INTO recipe (title, image_url, url) VALUES (?, ?, ?)", recipe.Title, recipe.ImageUrl, recipe.Url)
+	var recipeId string
+	err := db.DB.QueryRow("INSERT INTO recipes (title, image_url, url) VALUES ($1, $2, $3) RETURNING id;", recipe.Title, recipe.ImageUrl, recipe.Url).Scan(&recipeId)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert recipe")
 	}
-	recipe_id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
@@ -78,14 +75,13 @@ func AddRecipe(db RecipeDB, recipe *Recipe) error {
 		return errors.Wrap(err, "Failed to insert recipe into DB")
 	}
 	for i, step := range recipe.Steps {
-		_, err := db.DB.Exec("INSERT INTO step (recipe_id, text, number) VALUES (?, ?, ?)", recipe_id, step, i)
+		_, err := db.DB.Exec("INSERT INTO steps (recipe_id, text, number) VALUES ($1, $2, $3);", recipeId, step, i)
 		if err != nil {
 			return errors.Wrap(err, "Failed to insert step into DB")
 		}
 	}
 	for _, ingredient := range recipe.Ingredients {
-		fmt.Printf("%s\n", ingredient)
-		_, err := db.DB.Exec("INSERT INTO ingredient (recipe_id, text) VALUES (?, ?)", recipe_id, ingredient)
+		_, err := db.DB.Exec("INSERT INTO ingredients (recipe_id, text) VALUES ($1, $2)", recipeId, ingredient)
 		if err != nil {
 			return errors.Wrap(err, "Failed to insert ingredient into DB")
 		}
