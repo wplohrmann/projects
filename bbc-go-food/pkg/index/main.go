@@ -17,7 +17,7 @@ import (
 
 func getUrlsFromPage(n int) ([]string, error) {
 	base_url := "https://www.bbcgoodfood.com"
-	url := fmt.Sprintf("%s/search/page/%d?sort=-date", base_url, n)
+	url := fmt.Sprintf("%s/search/recipes/page/%d/?sort=-date", base_url, n)
 	fmt.Printf("Fetching URL %s\n", url)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -106,7 +106,6 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
 									fmt.Printf("Error: %s\n", err)
 									return nil, err
 								}
-								fmt.Printf("%s\n", maybeRecipe.SchemaType)
 								if maybeRecipe.SchemaType == "Recipe" {
 									parsedSteps := []string{}
 									for _, step := range maybeRecipe.RecipeInstructions {
@@ -129,6 +128,31 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
 	}
 }
 
+func addRecipeFromUrl(db models.RecipeDB, url string, dontDuplicate bool) error {
+	recipe, err := getRecipeFromPage(url)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Failed to fetch URL: %s", url))
+	}
+
+	if dontDuplicate {
+		result, err := db.DB.Query("select (title) from recipes where title==$1 LIMIT 1", recipe.Title)
+		if err != nil {
+			return errors.Wrap(err, "Failed to check for duplicates")
+		}
+		if result.Next() {
+			fmt.Printf("Found duplicate title:  %s\n", recipe.Title)
+			return nil
+		}
+	}
+
+	err = models.AddRecipe(db, recipe)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Failed to add recipe to database: %s", recipe.Title))
+	}
+
+	return nil
+}
+
 func IndexRecipes(firstTime bool) {
 	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
 	db, err := sqlx.Connect("postgres", dbAddress)
@@ -142,22 +166,13 @@ func IndexRecipes(firstTime bool) {
 			log.Fatal(errors.Wrap(err, "Failed to initiate database"))
 		}
 	}
-	urls, err := getUrlsFromPage(1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	recipe, err := getRecipeFromPage(urls[0])
-	if err != nil {
-		log.Fatal(err)
-	}
-	bytes, err := json.MarshalIndent(recipe, "", "    ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", bytes)
-
-	err = models.AddRecipe(recipeDB, recipe)
-	if err != nil {
-		log.Fatal(err)
+	for i := 1; true; i += 1 {
+		urls, err := getUrlsFromPage(i)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, url := range urls {
+			addRecipeFromUrl(recipeDB, url, true)
+		}
 	}
 }
