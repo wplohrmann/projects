@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 type Recipe struct {
@@ -13,17 +14,8 @@ type Recipe struct {
 	Ingredients []string `json:"ingredients"`
 }
 
-type dbStep struct {
-	Text   string `json:"text"`
-	Number int    `json:"number"`
-}
-
-type dbIngredient struct {
-	Text string `json:"text"`
-}
-
 const recipeSchema = `CREATE TABLE recipes (
-	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+	id uuid PRIMARY KEY,
     title text,
     image_url text,
     url text
@@ -45,7 +37,6 @@ type RecipeDB struct {
 }
 
 func InitDB(db RecipeDB) error {
-	// TODO: Don't recreate database every time
 	_, err := db.DB.Exec(recipeSchema)
 	if err != nil {
 		return errors.Wrap(err, "Failed to initiate recipe table:")
@@ -64,7 +55,7 @@ func InitDB(db RecipeDB) error {
 
 func AddRecipe(db RecipeDB, recipe *Recipe) error {
 	var recipeId string
-	err := db.DB.QueryRow("INSERT INTO recipes (title, image_url, url) VALUES ($1, $2, $3) RETURNING id;", recipe.Title, recipe.ImageUrl, recipe.Url).Scan(&recipeId)
+	err := db.DB.QueryRow("INSERT INTO recipes (id, title, image_url, url) VALUES ($1, $2, $3, $4) RETURNING id;", uuid.NewV4(), recipe.Title, recipe.ImageUrl, recipe.Url).Scan(&recipeId)
 	if err != nil {
 		return errors.Wrap(err, "Failed to insert recipe")
 	}

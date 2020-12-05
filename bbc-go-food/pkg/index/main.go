@@ -129,7 +129,19 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
 	}
 }
 
-func IndexRecipes() {
+func IndexRecipes(firstTime bool) {
+	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
+	db, err := sqlx.Connect("postgres", dbAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	recipeDB := models.RecipeDB{DB: db}
+	if firstTime {
+		err = models.InitDB(recipeDB)
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "Failed to initiate database"))
+		}
+	}
 	urls, err := getUrlsFromPage(1)
 	if err != nil {
 		log.Fatal(err)
@@ -144,16 +156,6 @@ func IndexRecipes() {
 	}
 	fmt.Printf("%s\n", bytes)
 
-	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
-	db, err := sqlx.Connect("postgres", dbAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-	recipeDB := models.RecipeDB{DB: db}
-	err = models.InitDB(recipeDB)
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "Failed to initiate database"))
-	}
 	err = models.AddRecipe(recipeDB, recipe)
 	if err != nil {
 		log.Fatal(err)
