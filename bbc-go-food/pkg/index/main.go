@@ -35,9 +35,6 @@ func getUrlsFromPage(n int) ([]string, error) {
 		switch {
 		case tt == html.ErrorToken:
 			{
-				for _, link := range urls {
-					fmt.Printf("%s\n", link)
-				}
 				return urls, nil
 			}
 		case tt == html.StartTagToken:
@@ -135,7 +132,7 @@ func addRecipeFromUrl(db models.RecipeDB, url string, dontDuplicate bool) error 
 	}
 
 	if dontDuplicate {
-		result, err := db.DB.Query("select (title) from recipes where title==$1 LIMIT 1", recipe.Title)
+		result, err := db.DB.Query("select (title) from recipes where title=$1 LIMIT 1", recipe.Title)
 		if err != nil {
 			return errors.Wrap(err, "Failed to check for duplicates")
 		}
@@ -172,7 +169,10 @@ func IndexRecipes(firstTime bool) {
 			log.Fatal(err)
 		}
 		for _, url := range urls {
-			addRecipeFromUrl(recipeDB, url, true)
+			err := addRecipeFromUrl(recipeDB, url, true)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
