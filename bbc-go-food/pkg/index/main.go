@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/jmoiron/sqlx"
