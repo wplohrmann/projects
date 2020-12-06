@@ -23,7 +23,7 @@ func fetch(url string) (*http.Response, error) {
 }
 
 func getUrlsFromJson(n int) ([]string, error) {
-	offset := 24 * n
+	offset := 24 * (n-1)
 	url := fmt.Sprintf("https://search.api.immediate.co.uk/v4/search?tab=recipes&sort=-date&limit=24&offset=%d&sitekey=bbcgoodfood", offset)
 	resp, err := fetch(url)
 	if err != nil {
