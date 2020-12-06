@@ -6,11 +6,12 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
-	"github.com/pkg/errors"
 	strip "github.com/grokify/html-strip-tags-go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/models"
 	"golang.org/x/net/html"
 )
@@ -65,6 +66,7 @@ func getUrlsFromPage(n int) ([]string, error) {
 }
 
 func getRecipeFromPage(url string) (*models.Recipe, error) {
+	time.Sleep(time.Second)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -126,21 +128,22 @@ func getRecipeFromPage(url string) (*models.Recipe, error) {
 }
 
 func addRecipeFromUrl(db models.RecipeDB, url string, dontDuplicate bool) error {
+	if dontDuplicate {
+		result, err := db.DB.Query("select (url) from recipes where url=$1 LIMIT 1", url)
+		if err != nil {
+			return errors.Wrap(err, "Failed to check for duplicates")
+		}
+		if result.Next() {
+			fmt.Printf("Found duplicate url:  %s\n", url)
+			return nil
+		}
+	}
+
 	recipe, err := getRecipeFromPage(url)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed to fetch URL: %s", url))
 	}
 
-	if dontDuplicate {
-		result, err := db.DB.Query("select (title) from recipes where title=$1 LIMIT 1", recipe.Title)
-		if err != nil {
-			return errors.Wrap(err, "Failed to check for duplicates")
-		}
-		if result.Next() {
-			fmt.Printf("Found duplicate title:  %s\n", recipe.Title)
-			return nil
-		}
-	}
 
 	err = models.AddRecipe(db, recipe)
 	if err != nil {
