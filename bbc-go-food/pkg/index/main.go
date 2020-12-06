@@ -100,7 +100,6 @@ func getUrlsFromPage(n int) ([]string, error) {
 }
 
 func getRecipeFromPage(url string) (*models.Recipe, error) {
-	time.Sleep(time.Second)
 	resp, err := fetch(url)
 	if err != nil {
 		return nil, err
