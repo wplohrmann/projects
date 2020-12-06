@@ -3,6 +3,7 @@ package index
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -16,11 +17,44 @@ import (
 	"golang.org/x/net/html"
 )
 
+func fetch(url string) (*http.Response, error) {
+	fmt.Printf("Fetching URL: %s\n", url)
+	return http.Get(url)
+}
+
+func getUrlsFromJson(n int) ([]string, error) {
+	offset := 24 * n
+	url := fmt.Sprintf("https://search.api.immediate.co.uk/v4/search?tab=recipes&sort=-date&limit=24&offset=%d&sitekey=bbcgoodfood", offset)
+	resp, err := fetch(url)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to fetch recipes from URL: %s", url))
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to read response body")
+	}
+
+	var recipeList struct {
+		Data         struct{ Results []struct{ Url string } }
+	}
+	if err := json.Unmarshal(bytes, &recipeList); err != nil {
+		fmt.Printf("Error: %s\n", err)
+		return nil, errors.Wrap(err, "Failed to read json")
+	}
+	urls := []string{}
+	for _, result := range recipeList.Data.Results {
+		urls = append(urls, fmt.Sprintf("http://bbcgoodfood.com%s", result.Url))
+	}
+
+	return urls, nil
+}
 func getUrlsFromPage(n int) ([]string, error) {
 	base_url := "https://www.bbcgoodfood.com"
 	url := fmt.Sprintf("%s/search/recipes/page/%d/?sort=-date", base_url, n)
 	fmt.Printf("Fetching URL %s\n", url)
-	resp, err := http.Get(url)
+	resp, err := fetch(url)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +101,7 @@ func getUrlsFromPage(n int) ([]string, error) {
 
 func getRecipeFromPage(url string) (*models.Recipe, error) {
 	time.Sleep(time.Second)
-	resp, err := http.Get(url)
+	resp, err := fetch(url)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +201,7 @@ func IndexRecipes(firstTime bool) {
 		}
 	}
 	for i := 1; true; i += 1 {
-		urls, err := getUrlsFromPage(i)
+		urls, err := getUrlsFromJson(i)
 		if err != nil {
 			log.Fatal(err)
 		}
