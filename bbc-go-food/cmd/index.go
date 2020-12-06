@@ -8,10 +8,16 @@ import (
 var firstTime bool
 
 var indexCmd = &cobra.Command{
-	Use:   "index",
+	Use:   "index ...[URLs] (Leave blank to use BBC Good Food)",
 	Short: "Download recipes not already downloaded",
 	Run: func(cmd *cobra.Command, args []string) {
-		index.IndexRecipes(firstTime)
+		if len(args) > 0 {
+			for _, arg := range args {
+				index.IndexSingleRecipe(arg, firstTime)
+			}
+		} else {
+			index.IndexRecipes(firstTime)
+		}
 	},
 }
 

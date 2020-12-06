@@ -187,6 +187,24 @@ func addRecipeFromUrl(db models.RecipeDB, url string, dontDuplicate bool) error 
 	return nil
 }
 
+func IndexSingleRecipe(url string, firstTime bool) {
+	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
+	db, err := sqlx.Connect("postgres", dbAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	recipeDB := models.RecipeDB{DB: db}
+	if firstTime {
+		err = models.InitDB(recipeDB)
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "Failed to initiate database"))
+		}
+	}
+	err = addRecipeFromUrl(recipeDB, url, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 func IndexRecipes(firstTime bool) {
 	dbAddress := "user=postgres password=postgres dbname=bbc-go-food"
 	db, err := sqlx.Connect("postgres", dbAddress)
