@@ -1,5 +1,4 @@
 import re
-import astor
 import ast
 p = "day18.txt"
 with open(p) as f:
@@ -14,7 +13,7 @@ for line in lines:
     swapped = line.strip().replace("+","/")
     tree = ast.parse(swapped, mode="eval")
     tree = DivToAdd().generic_visit(tree)
-    val = eval(astor.to_source(tree))
+    val = eval(compile(tree, "", mode="eval"))
     s += val
 print("Final answer:", s)
 
@@ -29,7 +28,7 @@ for line in lines:
     swapped = line.strip().translate(str.maketrans({"*":"+","+":"*"}))
     tree = ast.parse(swapped, mode="eval")
     tree = SwapAddMult().generic_visit(tree)
-    val = eval(astor.to_source(tree))
+    val = eval(compile(tree, "", mode="eval"))
     s += val
 print("Final answer:", s)
 
