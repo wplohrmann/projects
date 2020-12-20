@@ -152,7 +152,7 @@ kernel = """                  #
 #    ##    ##    ###
  #  #  #  #  #  #   """
 print(from_grid(full))
-kernel  = to_grid(kernel).astype(int)
+kernel  = (to_grid(kernel)=="#").astype(int)
 from scipy.signal import correlate
 max_dragons = None
 full = np.flipud(full)
