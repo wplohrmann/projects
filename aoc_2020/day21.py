@@ -40,10 +40,6 @@ while len(matched_allergens) != len(maybe_allergens):
             for a2 in maybe_allergens:
                 if a==a2:
                     continue
-                try:
-                    maybe_allergens[a2].remove(matched_allergens[a])
-                except KeyError:
-                    pass
+                maybe_allergens[a2] -= {matched_allergens[a]}
 stock = map(lambda x: x[1], sorted(matched_allergens.items(), key=lambda x: x[0]))
 print(*stock, sep=",")
-
