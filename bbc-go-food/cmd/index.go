@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/wplohrmann/projects/bbc-go-food/pkg/index"
 )
@@ -8,13 +10,11 @@ import (
 var firstTime bool
 
 var indexCmd = &cobra.Command{
-	Use:   "index ...[URLs] (Leave blank to use BBC Good Food)",
-	Short: "Download recipes not already downloaded",
+	Use:   "index [source]",
+	Short: "Index recipes from file or BBC Good Food API",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			for _, arg := range args {
-				index.IndexSingleRecipe(arg, firstTime)
-			}
+			fmt.Println("Indexing recipes from local storage is not implemented")
 		} else {
 			index.IndexRecipes(firstTime)
 		}
