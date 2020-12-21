@@ -28,17 +28,8 @@ for line in lines:
     allergens = allergens.union(these_allergens)
     full_ingredients = full_ingredients.union(these_ingredients)
 
-not_allergic = set()
-for ingredient in full_ingredients:
-    appears = False
-    for a in maybe_allergens:
-        if ingredient in maybe_allergens[a]:
-            appears = True
-    if not appears:
-        not_allergic.add(ingredient)
-c = 0
-for ingredient in not_allergic:
-    c += counts[ingredient]
+not_allergic = full_ingredients - set.union(*maybe_allergens.values())
+c = sum(counts[i] for i in not_allergic)
 print(c)
 
 matched_allergens = {}
