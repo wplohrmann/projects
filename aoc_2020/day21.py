@@ -12,21 +12,13 @@ with open("day21.txt") as f:
 allergens = set()
 full_ingredients=  set()
 maybe_allergens = {}
-counts = defaultdict(int)
+counts = Counter()
 for line in lines:
+    i, a = re.match("(.*) \(contains (.*)\)", line).groups()
     is_allergen = False
-    ingredients = line.split()
-    these_ingredients = set()
-    these_allergens = set()
-    for ingredient in ingredients:
-        if ingredient.startswith("(contains"):
-            is_allergen = True
-            continue
-        if is_allergen:
-            these_allergens.add(ingredient.strip("),"))
-        else:
-            counts[ingredient] += 1
-            these_ingredients.add(ingredient)
+    these_ingredients = set(i.split())
+    these_allergens = set(a.replace(",","").replace(")","").split())
+    counts += Counter(these_ingredients)
     for a in these_allergens:
         if a in maybe_allergens:
             maybe_allergens[a] = these_ingredients.intersection(maybe_allergens[a])
