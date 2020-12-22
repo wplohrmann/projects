@@ -30,12 +30,13 @@ class FoodGraph:
         if stop not in self.nodes:
             self.add_node(stop)
         self.last_node = stop
-        print(f"{start} ==({label})==> {stop}")
         self.dot.edge(self.nodes[start], self.nodes[stop], label)
 
-    def show(self):
+    def render(self):
         b = BytesIO(self.dot.pipe())
-        arr = plt.imread(b)
+        return plt.imread(b)
+    def show(self):
+        arr = self.render()
         plt.imshow(arr)
         plt.show()
 
@@ -52,7 +53,6 @@ class FoodGraph:
         if s == "":
             return False
         tree = self.lark.parse(s)
-        print(tree.pretty())
         start = stop = None
         for word in tree.children:
             value = word.children[0].value.strip("()")
@@ -67,14 +67,15 @@ class FoodGraph:
 
         return True
 
-title = "Kimchi scrambled eggs on toast"
-graph = FoodGraph(title)
-steps = """Beat the eggs and milk together with a pinch of salt. Pour into a non-stick pan over a low heat. Leave untouched for 30 seconds, then lift the pan a little and swirl the eggs around. Cook for 2 mins more, then fold through the kimchi, breaking up the eggs to scramble them. Serve the kimchi scrambled eggs on the toast, and top with the spring onion and tograshi, if using.
-"""
-steps = re.findall("[^\.,]+[\.,]", steps)
-for i, step in enumerate(steps):
-    print(f"Step {i}:", step)
-    while graph.parse_input(input()):
-        pass
+if __name__ == "__main__":
+    title = "Kimchi scrambled eggs on toast"
+    graph = FoodGraph(title)
+    steps = """Beat the eggs and milk together with a pinch of salt. Pour into a non-stick pan over a low heat. Leave untouched for 30 seconds, then lift the pan a little and swirl the eggs around. Cook for 2 mins more, then fold through the kimchi, breaking up the eggs to scramble them. Serve the kimchi scrambled eggs on the toast, and top with the spring onion and tograshi, if using.
+    """
+    steps = re.findall("[^\.,]+[\.,]", steps)
+    for i, step in enumerate(steps):
+        print(f"Step {i}:", step)
+        while graph.parse_input(input()):
+            pass
 
-graph.show()
+    graph.show()
