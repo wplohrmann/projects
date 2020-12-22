@@ -19,19 +19,19 @@ class FoodGraph:
         self.nodes[label] = letter
         self.dot.node(letter, label)
 
-    def add_edge(self, label, n1=None, n2=None):
-        if n1 is None:
-            n1 = self.last_node
-            assert n2 is None
-            n2 = n1 + "'"
-        assert n2 is not None
-        if n1 not in self.nodes:
-            self.add_node(n1)
-        if n2 not in self.nodes:
-            self.add_node(n2)
-        self.last_node = n2
-        print(f"{n1} ==({label})==> {n2}")
-        self.dot.edge(self.nodes[n1], self.nodes[n2], label)
+    def add_edge(self, label, start=None, stop=None):
+        if start is None:
+            start = self.last_node
+            assert stop is None
+            stop = start + "'"
+        assert stop is not None
+        if start not in self.nodes:
+            self.add_node(start)
+        if stop not in self.nodes:
+            self.add_node(stop)
+        self.last_node = stop
+        print(f"{start} ==({label})==> {stop}")
+        self.dot.edge(self.nodes[start], self.nodes[stop], label)
 
     def show(self):
         b = BytesIO(self.dot.pipe())
@@ -49,18 +49,22 @@ class FoodGraph:
 
         Each keyword may contain non-whitespace characters, or whitespace characters if surrounded by parentheses
         """
-        words = re.split(" (?!.*?\))", s)
+        if s == "":
+            return False
         tree = self.lark.parse(s)
         print(tree.pretty())
-        import pdb; pdb.set_trace()
+        start = stop = None
+        for word in tree.children:
+            value = word.children[0].value.strip("()")
+            if word.data == "action":
+                action = value
+            elif word.data == "start":
+                start = value
+            elif word.data == "stop":
+                stop = value
 
-        if len(words) == 1:
-            self.add_edge(words[0])
-            return True
-        if len(words) != 3:
-            return False
-        action, n1, n2 = words
-        self.add_edge(action, n1, n2)
+        self.add_edge(action, start, stop)
+
         return True
 
 title = "Kimchi scrambled eggs on toast"
