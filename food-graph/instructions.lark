@@ -1,0 +1,7 @@
+command : action [start] [stop]
+
+action : WORD
+start : " " WORD
+stop : " to " WORD
+
+WORD : /[^\s\(\)]+/ | "(" /[^\)]+/ ")"
