@@ -6,43 +6,56 @@ from itertools import product
 from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
 from io_utils import from_grid, to_grid
+from linked_list import Node
 
 with open("day23.txt") as f:
-    cups = list(map(int, list(f.read().strip())))
+    lst = list(map(int, list(f.read().strip())))
 
-def print_cups():
-    for j, c in enumerate(cups):
-        if j == current:
-            print(f"({c})", end=" ")
-        else:
-            print(c, end=" ")
-    print()
+part_two = True
+if part_two: # part 2
+    N = 1000000
+else:
+    N = 9
+lst = lst + list(range(max(lst)+1, N+1))
+assert len(lst) == N
 
-current = 0
-for i in range(100):
-    print("MOve", i)
-    print_cups()
-    cups = list(np.roll(cups, -current))
-    current_value  = cups[0]
-    picked_up = cups[1:4]
-    print("Picked up:", picked_up)
-    rest = cups[:1] + cups[4:]
-    destination = rest[0]-1
-    while True:
-        if destination not in rest:
-            destination -= 1
-            if destination < min(rest):
-                destination = max(rest)
-            continue
-        index = rest.index(destination)
-        print(destination)
-        break
-    a = len(cups)
-    cups = rest[:index+1] + picked_up + rest[index+1:]
-    if len(cups) != a:
-        import pdb; pdb.set_trace()
-    current = (cups.index(current_value)+1) % len(cups)
+lookup = {}
 
-current = cups.index(1)
-cups = cups[current+1:] + cups[:current]
-print("".join(map(str, cups)))
+cup = Node(lst[0])
+
+last = cup
+lookup[last.val] = last
+for c in lst[1:]:
+    last.next = Node(c)
+    last = last.next
+    lookup[last.val] = last
+last.next = cup
+
+if part_two:
+    steps = 10000000
+else:
+    steps = 100
+for i in range(steps):
+    # print(f"-- move {i} --")
+    # print(f"cups: {cup.list()}")
+    if i % 100000 == 0:
+        print(i)
+    pickup_begin = cup.next
+    vals = [pickup_begin, pickup_begin.next, pickup_begin.next.next]
+    destination_val = cup.val - 1
+    while destination_val == 0 or lookup[destination_val] in vals:
+        destination_val -= 1
+        if destination_val < 1:
+            destination_val = N
+    destination = lookup[destination_val]
+    next_after = destination.next
+    destination.next = vals[0]
+    cup.next = vals[-1].next
+    vals[-1].next = next_after
+    cup = cup.next
+
+if not part_two:
+    print("".join(map(str, lookup[1].list()[1:])))
+else:
+    a, b = lookup[1].next, lookup[1].next.next
+    print(a.val*b.val)
