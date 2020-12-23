@@ -3,6 +3,7 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from prelude import join
 with open("day20.txt") as f:
     tiles=  f.read().split("\n\n")
 
@@ -17,10 +18,10 @@ for tile in tiles:
     image = np.array(list(map(lambda line: np.array(list(line)), image)))
     ims[title] = image
     titles.append(title)
-    edges[title].append("".join(image[0]))
-    edges[title].append("".join(image[:,-1]))
-    edges[title].append("".join(image[-1]))
-    edges[title].append("".join(image[:,0]))
+    edges[title].append(join(image[0]))
+    edges[title].append(join(image[:,-1]))
+    edges[title].append(join(image[-1]))
+    edges[title].append(join(image[:,0]))
 
 corner_titles = []
 matches = defaultdict(lambda: [])
@@ -84,10 +85,10 @@ def align(title, title2, index, index2):
     ims[title2] = np.rot90(ims[title2], -rotations)
 
     edges[title2] = []
-    edges[title2].append("".join(ims[title2][0]))
-    edges[title2].append("".join(ims[title2][:,-1]))
-    edges[title2].append("".join(ims[title2][-1]))
-    edges[title2].append("".join(ims[title2][:,0]))
+    edges[title2].append(join(ims[title2][0]))
+    edges[title2].append(join(ims[title2][:,-1]))
+    edges[title2].append(join(ims[title2][-1]))
+    edges[title2].append(join(ims[title2][:,0]))
 
     if not edges[title][index] == edges[title2][(2+index)%4]:
         if index % 2 == 0:
@@ -98,10 +99,10 @@ def align(title, title2, index, index2):
         return
 
     edges[title2] = []
-    edges[title2].append("".join(ims[title2][0]))
-    edges[title2].append("".join(ims[title2][:,-1]))
-    edges[title2].append("".join(ims[title2][-1]))
-    edges[title2].append("".join(ims[title2][:,0]))
+    edges[title2].append(join(ims[title2][0]))
+    edges[title2].append(join(ims[title2][:,-1]))
+    edges[title2].append(join(ims[title2][-1]))
+    edges[title2].append(join(ims[title2][:,0]))
 
     if not edges[title][index] == edges[title2][(2+index)%4]:
         import pdb; pdb.set_trace()

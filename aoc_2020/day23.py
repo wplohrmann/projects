@@ -7,11 +7,12 @@ from collections import defaultdict, Counter
 import matplotlib.pyplot as plt
 from io_utils import from_grid, to_grid
 from linked_list import Node
+from prelude import join
 
 with open("day23.txt") as f:
     lst = list(map(int, list(f.read().strip())))
 
-part_two = True
+part_two = False
 if part_two: # part 2
     N = 1000000
 else:
@@ -55,7 +56,7 @@ for i in range(steps):
     cup = cup.next
 
 if not part_two:
-    print("".join(map(str, lookup[1].list()[1:])))
+    print(join(lookup[1].list()[1:]))
 else:
     a, b = lookup[1].next, lookup[1].next.next
     print(a.val*b.val)

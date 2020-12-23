@@ -1,5 +1,7 @@
 import re
 import numpy as np
+from prelude import fmap, join
+
 with open("day14.txt") as f:
     lines = f.readlines()
 
@@ -26,7 +28,7 @@ for line in lines:
 print(sum(addresses.values()))
 def write(addresses, mem, value):
     if "X" not in mem:
-        address = int("".join(map(str, mem)), 2)
+        address = int(join(mem), 2)
         addresses[address] = value
     for i, b in enumerate(mem):
         if b == "X":
