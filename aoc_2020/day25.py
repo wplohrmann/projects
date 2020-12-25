@@ -28,10 +28,13 @@ def gen_transform(n):
 
 i = 1
 i_s = []
+keys = []
 for key, i in gen_transform(7):
     if key in lines:
         i_s.append(i)
+        keys.append(key)
         print("Added", i)
     if len(i_s) == 2:
         break
     i += 1
+print(transform(keys[0], i_s[1]), "equals", transform(keys[1], i_s[0]))
