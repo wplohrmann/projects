@@ -1,0 +1,6 @@
+a: T[N], b: T[M]
+
+c: T[N] // Optional type declaration
+c[i] = a[i] * b[i] // Compilation error: M may not be equal to N
+
+sum_i(c[i])

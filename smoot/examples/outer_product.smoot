@@ -1,0 +1,6 @@
+a: T[N], b: T[M]
+
+c: T[N,M]
+c[i,j] = a[i] * b[j]
+
+c

@@ -1,0 +1,6 @@
+a: T[N], b: T[N]
+
+c: T[N] // Optional type declaration
+c[i] = a[i] * b[i]
+
+sum_i(c[i])
