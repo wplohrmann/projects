@@ -14,11 +14,12 @@ CHUNK = RATE // 2
 
 st.title("Noise matching")
 
-clicked = st.button("Start recording")
+start_recording = st.button("Start recording")
+stop_recording = st.button("Stop recording")
 
 spectrogram = None
 
-if clicked:
+if start_recording:
     frames = []
     audio = pyaudio.PyAudio()
     try:
