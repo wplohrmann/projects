@@ -2,7 +2,7 @@ import pyaudio
 from time import time
 from scipy import signal
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import wave
 import streamlit as st
 
@@ -10,7 +10,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 MAX_WINDOW = 5 # seconds
-CHUNK = RATE // 2
+CHUNK = int(RATE * 0.1)
 
 st.title("Noise matching")
 
@@ -42,21 +42,16 @@ if start_recording:
             t_max = segment_times[-1] + offset
             f_min = sample_frequencies[0] / 1000
             f_max = sample_frequencies[-1] / 100
-            print(f"Took {(time()-t0)*1000}ms to process 5s")
+            scaled = np.log(np.abs(stft))
+            scaled = (scaled - scaled.min()) / (scaled.max() - scaled.min())
+            image_array = cm.viridis(scaled)
+            print(f"Took {(time()-t0)*1000}ms to process {CHUNK/RATE*1000}ms")
 
             if spectrogram is None:
-                fig = plt.figure()
-                spectrogram = plt.imshow(np.log(np.abs(stft)), interpolation="none", aspect="auto",
-                        extent=[t_min, t_max, f_max, f_min])
-                plt.title("STFT Magnitude")
-                plt.ylabel("Frequency [kHz]")
-                plt.xlabel("Time [sec]")
-                the_plot = st.pyplot(fig)
+                spectrogram = st.image(image_array)
             else:
-                spectrogram.set_data(np.log(np.abs(stft)))
-                spectrogram.set_extent([t_min, t_max, f_max, f_min])
-                the_plot.pyplot(plt)
-            print(f"Took {(time()-t0)*1000}ms to process and plot 0.5s")
+                spectrogram.image(image_array)
+            print(f"Took {(time()-t0)*1000}ms to process and plot {CHUNK/RATE*1000}s")
 
 
     finally:
