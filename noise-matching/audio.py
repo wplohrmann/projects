@@ -9,10 +9,10 @@ from multiprocessing import Queue, Process
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100
-MAX_WINDOW = 5 # seconds
+RATE = 44100 // 5
+MAX_WINDOW = 10 # seconds
 CHUNK = int(RATE * 0.1)
-NPERSEG = RATE * 20e-3 # 20ms
+NPERSEG = RATE * 100e-3 # 100ms
 
 class Processor:
     def __enter__(self):
