@@ -19,25 +19,20 @@ def reversort(integers):
     return cost, integers
 
 def get_subcosts(n, c):
-    possibilities = [[]]
-    for i in range(n-1):
-        # for each list of costs, split it into multiple lists
-        # Possible new costs at the end: range(1, min(n-i, remaining_cost))
-        new_possibilities = []
-        effective_n = n - i
-        for possibility in possibilities:
-            cost_sum = sum(possibility)
-            if not (effective_n-1 <= (c - cost_sum) <= (effective_n*(effective_n+1)//2)):
-                continue
-            new_possibilities.extend([possibility + [x] for x in range(1, n-i+1)])
-        possibilities = new_possibilities
-
-    try:
-        costs = next(filter(lambda x: sum(x)==c, possibilities))
-    except StopIteration:
+    costs = list(range(2, n+1))[::-1]
+    excess = sum(costs) - c
+    if excess < 0:
         return None
+    for i, cost in enumerate(costs):
+        if excess == 0:
+            return costs
+        trim = min(excess, cost-1)
+        excess -= trim
+        costs[i] -= trim
+    if excess == 0:
+        return costs
 
-    return costs
+    return None
 
 def solve_naive(n, c):
     ordered = list(range(1, n+1))
