@@ -2,10 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def solve(students):
-    student_perfs = students.mean(axis=0)
-    student_indices = np.argsort(student_perfs)
-    s_hat = np.linspace(-3, 3, students.shape[1])[np.newaxis,student_indices]
-
     question_perfs = students.mean(axis=0)
     question_indices = np.argsort(question_perfs)
     q_hat = np.linspace(3, -3, students.shape[1])[np.newaxis,question_indices]
@@ -13,29 +9,23 @@ def solve(students):
     students = students[:,question_indices]
     assert students.shape == (100,10000)
 
-    special = 0
+    student_perfs = students[:,8000:].mean(axis=1)
+    student_indices = np.argsort(student_perfs)
+    s_hat = np.linspace(-3, 3, students.shape[1])[student_indices, np.newaxis]
 
-    anchor = 200
-    curve_x = np.sum(students[:,:anchor], axis=1)
-    curve_y = np.sum(students[:,anchor:], axis=1)
-    indices = np.argsort(curve_x)
-    special = indices.tolist().index(special)
-    curve_x = curve_x[indices]
-    curve_y = curve_y[indices]
-    # smooth = np.convolve(curve_y, np.ones(3)/3, mode="same")
-    # smooth[0] = curve_y[0]
-    # smooth[-1] = curve_y[-1]
-    # metric = (smooth - curve_y) / curve_y
 
-    plt.subplot(211)
-    plt.scatter(curve_x, curve_y, c="b")
-    plt.scatter(curve_x[special:special+1], curve_y[special:special+1], c="r")
+    prob_correct_not_cheater = 1 / (1 + np.exp(q_hat - s_hat))
+    prob_correct_cheater = 0.5 + 0.5 * prob_correct_not_cheater
 
-    plt.subplot(212)
-    plt.scatter(curve_x[:-1], (curve_y[:-1]-curve_y[1:])/curve_y[:-1])
+    prob_given_cheater = prob_correct_cheater * (students==1) + (1 - prob_correct_cheater) * (students == 0)
+    prob_given_not_cheater = prob_correct_not_cheater * (students==1) + (1 - prob_correct_not_cheater) * (students == 0)
+
+    prob_cheater = np.sum(np.log(prob_given_cheater) - np.log(prob_given_not_cheater), axis=1)
+    plt.plot(prob_cheater, "bo")
+    plt.plot(prob_cheater[:1], "ro")
     plt.show()
 
-    return 1 #np.argmin(metric)+1
+    return np.argmax(prob_cheater)+1
 
 for _ in range(50):
     questions = np.random.uniform(-3., 3., size=(1, 10000))
