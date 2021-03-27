@@ -4,30 +4,36 @@ import numpy as np
 
 def solve(students):
     question_perfs = students.mean(axis=0)
-    question_indices = np.argsort(question_perfs)
-    q_hat = np.linspace(3, -3, students.shape[1])[np.newaxis,question_indices]
+    question_indices = np.argsort(-question_perfs)
+    q_hat = np.linspace(-3, 3, students.shape[1])[np.newaxis]
 
     students = students[:,question_indices]
     assert students.shape == (100,10000)
 
-    anchor = 8000
-    student_perfs = students[:,anchor:].mean(axis=1) - students[:,:anchor].mean(axis=1)
-    student_indices = np.argsort(student_perfs)
-    s_hat = np.linspace(-3, 3, students.shape[1])[student_indices, np.newaxis]
-
-
-    prob_correct_not_cheater = 1 / (1 + np.exp(q_hat - s_hat))
-    prob_correct_cheater = 0.5 + 0.5 * prob_correct_not_cheater
-
-    prob_given_cheater = prob_correct_cheater * (students==1) + (1 - prob_correct_cheater) * (students == 0)
-    prob_given_not_cheater = prob_correct_not_cheater * (students==1) + (1 - prob_correct_not_cheater) * (students == 0)
-
-    prob_cheater = np.sum(np.log(prob_given_cheater) - np.log(prob_given_not_cheater), axis=1)
-    # plt.plot(prob_cheater, "bo")
-    # plt.plot(prob_cheater[:1], "ro")
-    # plt.show()
-
-    return np.argmax(prob_cheater)+1
+    cumulative = np.cumsum(students, axis=1)
+    threshold = 10000
+    cums_last = cumulative[:,-1]
+    anchor = 4000
+    cums_anchor = cumulative[:,anchor]
+    rank_5000 = np.argsort(np.argsort(cums_anchor))
+    rank_10000 = np.argsort(np.argsort(cums_last))
+    index = np.argmax(rank_10000 - rank_5000)
+    max_climb = (rank_10000 - rank_5000)[index]
+    if max_climb < 5:
+        index = np.argmax(cumulative[:,-1])
+    if index != 0:
+        pass
+        # plt.scatter(cumulative[:,4000], cumulative[:,-1], c="b")
+        # plt.scatter(cumulative[:1,4000], cumulative[:1,-1], c="r")
+        # plt.show()
+        # for i in range(len(students)):
+        #     if i == 0:
+        #         c= "r"
+        #     else:
+        #         c = "b"
+        #     plt.plot(q_hat[0], cumulative[i], c)
+        # plt.show()
+    return index+1
 
 # num_correct = 0
 # n = 100
