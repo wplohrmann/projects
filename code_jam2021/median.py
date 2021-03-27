@@ -5,9 +5,13 @@ class Solver:
         self.known = []
         self.unknown = unknown
         self.subsolvers = []
+        self.maxmin = [unknown[0], unknown[-1]]
     def next(self):
         if len(self.known) == 0:
-            return [self.unknown[0], self.unknown[1], self.unknown[-1]], False
+            if len(self.unknown) > 4:
+                return self.unknown[1:4], False
+            else:
+                return [self.unknown[0], self.unknown[1], self.unknown[-1]], False
         elif len(self.unknown) == 0:
             # real_knowns = [self.known[0][1:], [self.known[0][0]], self.middle, [self.known[1][0]], self.known[1][1:]]
             individually_sorted = [sort(x, oracle) for x in self.known]
@@ -22,7 +26,10 @@ class Solver:
                     pass # All good, this is as expected if list sorted already
                 else:
                     raise ValueError("Something has gone wrong") # Ran out of questions or logic error (definite_max must be max)
-            return sum(individually_sorted, []), True
+            ambiguous_sorted = sum(individually_sorted, [])
+            if ambiguous_sorted[0] != self.maxmin[0] and ambiguous_sorted[-1] != self.maxmin[1]:
+                ambiguous_sorted = ambiguous_sorted[::-1]
+            return ambiguous_sorted, True
         else:
             unknown = self.unknown[0]
             return [self.known[0][-1], self.known[2][0], unknown], False
