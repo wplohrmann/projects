@@ -1,26 +1,13 @@
 import numpy as np
 
 class Solver:
-    def __init__(self, unknown, max_known=False, min_known=False):
+    def __init__(self, unknown):
         self.known = []
         self.unknown = unknown
-        if max_known:
-            self.max = unknown[-1]
-        else:
-            self.max = None
-        if min_known:
-            self.min = unknown[0]
-        else:
-            self.min = None
         self.subsolvers = []
     def next(self):
         if len(self.known) == 0:
-            if self.max is not None:
-                return self.unknown[:3], False
-            elif self.min is not None and len(self.unknown) > 3:
-                return self.unknown[1:4], False
-            else:
-                return [self.unknown[0], self.unknown[1], self.unknown[-1]], False
+            return self.unknown[:3], False
         elif len(self.unknown) == 0:
             # real_knowns = [self.known[0][1:], [self.known[0][0]], self.middle, [self.known[1][0]], self.known[1][1:]]
             assert len(self.known) == 3
@@ -36,12 +23,7 @@ class Solver:
                     pass # All good, this is as expected if list sorted already
                 else:
                     raise ValueError("Something has gone wrong") # Ran out of questions or logic error (definite_max must be max)
-            ambiguous_sorted = sum(individually_sorted, [])
-            if self.max is not None and ambiguous_sorted[-1] != self.max:
-                ambiguous_sorted = ambiguous_sorted[::-1]
-            elif self.min is not None and ambiguous_sorted[0] != self.min:
-                ambiguous_sorted = ambiguous_sorted[::-1]
-            return ambiguous_sorted, True
+            return sum(individually_sorted, []), True
         else:
             unknown = self.unknown[0]
             return [self.known[0][-1], self.known[2][0], unknown], False
@@ -100,13 +82,31 @@ class Oracle:
                 return list(map(int, answer))
 
 def sort(indices, oracle, max_known=False, min_known=False):
-    if debug:
-        print("Sorting", indices)
     if len(indices) < 3:
         return indices
+    if debug:
+        print("Sorting", indices)
+    if max_known:
+        sorted_without_max = sort(indices[:-1], oracle)
+        answer = oracle.ask([sorted_without_max[0], sorted_without_max[-1], indices[-1]])
+        if answer == sorted_without_max[0]:
+            return sorted_without_max[::-1] + [indices[-1]]
+        elif answer == sorted_without_max[-1]:
+            return sorted_without_max + [indices[-1]]
+        else:
+            raise ValueError("Uh oh")
+    if min_known:
+        sorted_without_min = sort(indices[1:], oracle)
+        answer = oracle.ask([indices[0], sorted_without_min[0], sorted_without_min[-1]])
+        if answer == indices[0]:
+            raise ValueError("Wa!")
+        elif answer == sorted_without_min[0]:
+            return [indices[0]] + sorted_without_min
+        elif answer == sorted_without_min[-1]:
+            return [indices[0]] + sorted_without_min[::-1]
     elif len(indices) == 0:
         raise ValueError("Something went wrong...")
-    solver = Solver(indices, max_known=max_known, min_known=min_known)
+    solver = Solver(indices)
     while True:
         question, is_solution = solver.next()
         if is_solution:
