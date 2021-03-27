@@ -1,20 +1,30 @@
 import numpy as np
 
 class Solver:
-    def __init__(self, unknown):
+    def __init__(self, unknown, max_known=False, min_known=False):
         self.known = []
         self.unknown = unknown
+        if max_known:
+            self.max = unknown[-1]
+        else:
+            self.max = None
+        if min_known:
+            self.min = unknown[0]
+        else:
+            self.min = None
         self.subsolvers = []
-        self.maxmin = [unknown[0], unknown[-1]]
     def next(self):
         if len(self.known) == 0:
-            if len(self.unknown) > 4:
+            if self.max is not None:
+                return self.unknown[:3], False
+            elif self.min is not None and len(self.unknown) > 3:
                 return self.unknown[1:4], False
             else:
                 return [self.unknown[0], self.unknown[1], self.unknown[-1]], False
         elif len(self.unknown) == 0:
             # real_knowns = [self.known[0][1:], [self.known[0][0]], self.middle, [self.known[1][0]], self.known[1][1:]]
-            individually_sorted = [sort(x, oracle) for x in self.known]
+            assert len(self.known) == 3
+            individually_sorted = [sort(self.known[0], oracle, max_known=True), sort(self.known[1], oracle), sort(self.known[2], oracle, min_known=True)]
             if len(individually_sorted[1]) > 1:
                 bottom = individually_sorted[1][0]
                 top = individually_sorted[1][-1]
@@ -27,7 +37,9 @@ class Solver:
                 else:
                     raise ValueError("Something has gone wrong") # Ran out of questions or logic error (definite_max must be max)
             ambiguous_sorted = sum(individually_sorted, [])
-            if ambiguous_sorted[0] != self.maxmin[0] and ambiguous_sorted[-1] != self.maxmin[1]:
+            if self.max is not None and ambiguous_sorted[-1] != self.max:
+                ambiguous_sorted = ambiguous_sorted[::-1]
+            elif self.min is not None and ambiguous_sorted[0] != self.min:
                 ambiguous_sorted = ambiguous_sorted[::-1]
             return ambiguous_sorted, True
         else:
@@ -87,14 +99,14 @@ class Oracle:
             else:
                 return list(map(int, answer))
 
-def sort(indices, oracle):
+def sort(indices, oracle, max_known=False, min_known=False):
     if debug:
         print("Sorting", indices)
     if len(indices) < 3:
         return indices
     elif len(indices) == 0:
         raise ValueError("Something went wrong...")
-    solver = Solver(indices)
+    solver = Solver(indices, max_known=max_known, min_known=min_known)
     while True:
         question, is_solution = solver.next()
         if is_solution:
