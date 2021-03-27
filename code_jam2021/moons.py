@@ -36,8 +36,16 @@ assert get_cost(1, 2, "CC") == 0
 def solve_naive(x, y, s):
     min_cost = 1e100
     best = None
-    # for possibility in possibilities(s):
-    for possibility in (s.replace("?", "C"), s.replace("?", "J")):
+    if x + y < 0:
+        num_wildcards = sum(map(lambda x: int(x=="?"), s))
+        combinations = (
+                s.replace("?"*num_wildcards, "".join(["C", "J"][i] for i in range(num_wildcards))),
+                s.replace("?"*num_wildcards, "".join(["J", "C"][i] for i in range(num_wildcards))),
+                )
+    else:
+        combinations = (s.replace("?", "C"), s.replace("?", "J"))
+
+    for possibility in combinations:
         cost = get_cost(x, y, possibility)
         if cost < min_cost:
             min_cost = cost
