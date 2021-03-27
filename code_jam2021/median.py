@@ -105,12 +105,12 @@ if not debug:
     n = int(n)
     q = int(q)
 else:
-    T = 1
-    n = 6
+    T = 4
+    n = 10
 
 for t in range(T):
     oracle = Oracle(debug=debug, n=n)
-    sorted_list = sort(list(range(n)), oracle)
+    sorted_list = sort(list(range(1, n+1)), oracle)
     answer = oracle.ask(sorted_list)
     if answer == -1:
         raise ValueError("Wrong answer!")
