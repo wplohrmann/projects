@@ -29,7 +29,7 @@ enum Message {
     Tick(f32),
 }
 
-impl Application for App<Pendulum> {
+impl<T: Dynamic + Default + Drawable> Application for App<T> {
     type Executor = executor::Default;
     type Message = Message;
     type Flags = ();
