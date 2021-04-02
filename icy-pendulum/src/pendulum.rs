@@ -41,7 +41,7 @@ impl Drawable for Pendulum {
         let length = frame.width().min(frame.height()) / 2.0;
         let line = Path::line(
             Point::ORIGIN,
-            Point::new(length * self.theta.sin(), -length * self.theta.cos()),
+            Point::new(length * self.theta.sin(), length * self.theta.cos()),
         );
 
         let thin_stroke = Stroke {
