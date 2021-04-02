@@ -6,6 +6,7 @@ use iced::{
 use iced::widget::canvas::Frame;
 
 use super::dynamic::Dynamic;
+use super::drawable::Drawable;
 
 pub struct Pendulum {
     theta: f32,
@@ -32,8 +33,8 @@ impl Dynamic for Pendulum {
     }
 }
 
-impl Pendulum {
-    pub fn draw(&self, frame: &mut Frame) {
+impl Drawable for Pendulum {
+    fn draw(&self, frame: &mut Frame) {
         let center = frame.center();
         frame.translate(Vector::new(center.x, center.y));
 

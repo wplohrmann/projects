@@ -1,3 +1,4 @@
+mod drawable;
 mod dynamic;
 mod pendulum;
 
@@ -7,6 +8,7 @@ use iced::{
     Rectangle, Settings, Subscription, Vector,
 };
 
+use drawable::Drawable;
 use dynamic::Dynamic;
 use pendulum::Pendulum;
 
@@ -58,7 +60,7 @@ impl Application for App<Pendulum> {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        time::every(std::time::Duration::from_millis(20)).map(|_| Message::Tick(20e-3))
+        time::every(std::time::Duration::from_millis(5)).map(|_| Message::Tick(5e-3))
     }
 
     fn view(&mut self) -> Element<Message> {
@@ -76,13 +78,13 @@ impl Application for App<Pendulum> {
     }
 }
 
-impl canvas::Program<Message> for App<Pendulum> {
+impl<T: Drawable + Dynamic + Default> canvas::Program<Message> for App<T> {
     fn draw(&self, bounds: Rectangle, _cursor: Cursor) -> Vec<Geometry> {
         let background = self.canvas.draw(bounds.size(), |frame| {
             let background = Path::rectangle(Point { x: 0., y: 0. }, frame.size());
-            frame.fill(&background, Color::new(0., 1., 0., 0.5));
+            frame.fill(&background, Color::new(0., 1., 0., 1.));
 
-            self.system.draw(frame);
+            Drawable::draw(&self.system, frame);
         });
 
         // let drawn_system = self.system.draw(bounds, &self.canvas);
