@@ -5,7 +5,7 @@ pub enum Expr {
     Constant(f32), // Constant value
     Coord(usize, usize), // An indexed coordinate, time-differentiated n times
     Add(Vec<Expr>),
-    Mul(Box<Expr>, Box<Expr>), // Binary multiplication
+    Mul(Vec<Expr>),
     // Sin(Box<Expr>), // sin (trig)
     // Cos(Box<Expr>), // cos (trig)
 }
@@ -19,7 +19,21 @@ impl Expr {
         match self {
             Expr::Coord(i, n) => Expr::Coord(*i, n+1),
             Expr::Add(es) => Expr::Add(es.iter().map(|e| e.dot()).collect()),
-            Expr::Mul(e1, e2) => e1.dot() * (**e2).clone() + (**e1).clone() * e2.dot(),
+            Expr::Mul(es) => {
+                let mut result = Expr::Constant(0.);
+                for i in 0..es.len() {
+                    let mut product = Expr::Constant(1.);
+                    for (j, e) in es.iter().enumerate() {
+                        if i == j {
+                            product = product * e.dot();
+                        } else {
+                            product = product * e.clone();
+                        }
+                    }
+                    result = result + product;
+                }
+                result
+            },
             Expr::Constant(_) => Expr::Constant(0.),
         }
     }
@@ -29,13 +43,20 @@ impl Expr {
         loop {
             let simplified = match self {
                 Expr::Add(es) => simplify_add(es),
-                Expr::Mul(e1, e2) => simplify_mul(e1, e2),
+                Expr::Mul(es) => simplify_mul(es),
                 _ => self.clone(),
             };
             if simplified == last {
                 return simplified;
             }
             last = simplified;
+        }
+    }
+
+    pub fn unwrap_mul(self) -> Vec<Expr> {
+        match self {
+            Expr::Mul(es) => es,
+            _ => panic!("Tried to unwrap_mul on non-Mul expression")
         }
     }
 
@@ -51,21 +72,26 @@ pub fn simplify_add(es: &Vec<Expr>) -> Expr {
     Expr::Add(simplified)
 }
 
-pub fn simplify_mul(e1: &Expr, e2: &Expr) -> Expr {
-    if e1 == &Expr::Constant(0.) {
-        return Expr::Constant(0.);
-    } else if e2 == &Expr::Constant(0.) {
-        return Expr::Constant(0.);
+pub fn simplify_mul(es: &Vec<Expr>) -> Expr {
+
+    let mut simplified = Vec::new();
+    for e in es {
+        match e {
+            zero if *zero == Expr::Constant(0.) => return Expr::Constant(0.), // 0 * anything is 0
+            one if *one == Expr::Constant(1.) => (), // 0 * anything is 0
+            Expr::Mul(sub_es) => { // Flatten nested multiplication
+                let simplified_sub_es = simplify_mul(sub_es);
+                match simplified_sub_es {
+                    Expr::Mul(mut x) => simplified.append(&mut x),
+                    _ => return Expr::Constant(0.),
+                }
+            }
+            e => simplified.push(e.simplify()) // anything else is pushed onto the stack of factors
+        };
     }
 
-    let e1_simplified = e1.simplify();
-    let e2_simplified = e2.simplify();
-
-    if e1_simplified <= e2_simplified {
-        return e1_simplified * e2_simplified;
-    } else {
-        return e2_simplified * e1_simplified;
-    }
+    simplified.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    Expr::Mul(simplified)
 }
 
 impl std::fmt::Display for Expr {
@@ -73,7 +99,7 @@ impl std::fmt::Display for Expr {
         match self {
             Expr::Coord(i, n) => write!(f, "q_{}{}", i, ".".repeat(*n)),
             Expr::Add(es) => write!(f, "({})", es.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" + ")),
-            Expr::Mul(e1, e2) => write!(f, "{} * {}", e1, e2),
+            Expr::Mul(es) => write!(f, "({})", es.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" * ")),
             Expr::Constant(k) => write!(f, "{}", k)
         }
     }
@@ -83,7 +109,7 @@ impl ops::Mul<Expr> for f32 {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
-        Expr::Mul(Box::new(rhs), Box::new(Expr::Constant(self)))
+        Expr::Mul(vec![Expr::Constant(self), rhs])
     }
 }
 
@@ -91,7 +117,7 @@ impl ops::Mul<Expr> for &f32 {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
-        Expr::Mul(Box::new(rhs), Box::new(Expr::Constant(*self)))
+        Expr::Mul(vec![Expr::Constant(*self), rhs])
     }
 }
 
@@ -114,7 +140,7 @@ impl ops::Mul<Expr> for Expr {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
-        Expr::Mul(Box::new(self.clone()), Box::new(rhs))
+        Expr::Mul(vec![self.clone(), rhs])
     }
 }
 
