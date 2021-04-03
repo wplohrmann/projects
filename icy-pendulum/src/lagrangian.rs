@@ -47,6 +47,7 @@ impl Expr {
                 _ => self.clone(),
             };
             if simplified == last {
+                println!("Simplified {} to {}", self, simplified);
                 return simplified;
             }
             last = simplified;

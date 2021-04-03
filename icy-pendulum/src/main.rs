@@ -18,7 +18,7 @@ pub fn main() -> iced::Result {
     let mass_on_a_spring = MassOnASpring{x: 5., v: 5., omega_sq: 6.};
     println!("{}", mass_on_a_spring.lagrangian());
     println!("{}", mass_on_a_spring.lagrangian().dot());
-    println!("{}", mass_on_a_spring.lagrangian().dot().simplify().simplify().simplify());
+    println!("{}", mass_on_a_spring.lagrangian().dot().simplify());
     if true {
         panic!("ohno");
     }
