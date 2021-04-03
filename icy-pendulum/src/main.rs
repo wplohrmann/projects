@@ -1,6 +1,7 @@
 mod drawable;
 mod dynamic;
 mod pendulum;
+mod lagrangian;
 
 use iced::{
     canvas::{self, Cache, Canvas, Cursor, Geometry, LineCap, Path, Stroke},
@@ -11,8 +12,16 @@ use iced::{
 use drawable::Drawable;
 use dynamic::Dynamic;
 use pendulum::Pendulum;
+use lagrangian::{MassOnASpring, Lagrangian};
 
 pub fn main() -> iced::Result {
+    let mass_on_a_spring = MassOnASpring{x: 5., v: 5., omega_sq: 6.};
+    println!("{}", mass_on_a_spring.lagrangian());
+    println!("{}", mass_on_a_spring.lagrangian().dot());
+    println!("{}", mass_on_a_spring.lagrangian().dot().simplify().simplify().simplify());
+    if true {
+        panic!("ohno");
+    }
     App::<Pendulum>::run(Settings {
         antialiasing: true,
         ..Settings::default()
