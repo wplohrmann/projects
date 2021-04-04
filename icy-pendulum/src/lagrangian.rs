@@ -53,14 +53,6 @@ impl Expr {
             last = simplified;
         }
     }
-
-    pub fn unwrap_mul(self) -> Vec<Expr> {
-        match self {
-            Expr::Mul(es) => es,
-            _ => panic!("Tried to unwrap_mul on non-Mul expression")
-        }
-    }
-
 }
 
 pub fn simplify_add(es: &Vec<Expr>) -> Expr {
@@ -68,6 +60,8 @@ pub fn simplify_add(es: &Vec<Expr>) -> Expr {
         .filter(|&e| e != &Expr::Constant(0.))
         .map(|e| e.simplify())
         .collect::<Vec<Expr>>();
+
+    if simplified.len() == 1 { return simplified[0].clone(); }
     simplified.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
     Expr::Add(simplified)
@@ -91,6 +85,7 @@ pub fn simplify_mul(es: &Vec<Expr>) -> Expr {
         };
     }
 
+    if simplified.len() == 1 { return simplified[0].clone(); }
     simplified.sort_by(|a, b| a.partial_cmp(b).unwrap());
     Expr::Mul(simplified)
 }
