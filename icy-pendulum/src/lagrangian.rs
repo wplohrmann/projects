@@ -1,6 +1,14 @@
+use pest::Parser;
+use pest::error::Error;
+use pest::iterators::Pair;
+
 use std::ops;
 
-#[derive(Clone, PartialEq, PartialOrd)]
+#[derive(Parser)]
+#[grammar = "algebra.pest"]
+struct AlgebraParser;
+
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum Expr {
     Constant(f32), // Constant value
     Coord(usize, usize), // An indexed coordinate, time-differentiated n times
@@ -136,7 +144,14 @@ impl ops::Mul<Expr> for Expr {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
-        Expr::Mul(vec![self.clone(), rhs])
+        match self {
+            Expr::Mul(es) => { 
+                let mut cloned = es.clone();
+                cloned.push(rhs);
+                Expr::Mul(cloned)
+            },
+            e => Expr::Mul(vec![e, rhs])
+        }
     }
 }
 
@@ -162,5 +177,77 @@ impl Lagrangian for MassOnASpring {
         let ke = 0.5 * Expr::Coord(0, 1) * Expr::Coord(0, 1);
         let pe = 0.5 * self.omega_sq * Expr::Coord(0, 0) * Expr::Coord(0, 0);
         pe - ke
+    }
+}
+
+impl std::str::FromStr for Expr {
+    type Err = Error<Rule>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let pair = AlgebraParser::parse(Rule::expr, s)?.next().unwrap();
+        fn parse_value(pair: Pair<Rule>) -> Expr {
+            match pair.as_rule() {
+                Rule::float => Expr::Constant(pair.as_str().parse().unwrap()),
+                Rule::coord => {
+                    let mut inner_pairs = pair.into_inner();
+                    inner_pairs.next(); // Consume q
+                    let index = inner_pairs.next().unwrap().as_str().parse().unwrap();
+                    let n_dots = inner_pairs.next().unwrap().as_str().len();
+                    Expr::Coord(index, n_dots)
+                },
+                Rule::sum => {
+                    pair.into_inner()
+                        .map(|p| parse_value(p))
+                        .reduce(|a, b| a+b)
+                        .unwrap()
+                },
+                Rule::mul => {
+                    pair.into_inner()
+                        .map(|p| parse_value(p))
+                        .reduce(|a, b| a*b)
+                        .unwrap()
+                },
+                Rule::digit => todo!("digit"),
+                Rule::q => todo!("q"),
+                Rule::dots => todo!("dots"),
+                Rule::expr => todo!("expr"),
+            }
+        }
+        return Ok(parse_value(pair));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Expr;
+    #[test]
+    fn coord() {
+        assert_eq!("q_0".parse::<Expr>().unwrap(), Expr::Coord(0, 0));
+        assert_eq!("q_1.".parse::<Expr>().unwrap(), Expr::Coord(1, 1));
+        assert_eq!("q_2..".parse::<Expr>().unwrap(), Expr::Coord(2, 2));
+    }
+
+    #[test]
+    fn float() {
+        assert_eq!("0.1".parse::<Expr>().unwrap(), Expr::Constant(0.1));
+        assert_eq!("5".parse::<Expr>().unwrap(), Expr::Constant(5.));
+        assert_eq!("1.1".parse::<Expr>().unwrap(), Expr::Constant(1.1));
+    }
+
+    #[test]
+    fn add() {
+        assert_eq!("(2 + 1)".parse::<Expr>().unwrap(), Expr::Add(vec![Expr::Constant(2.), Expr::Constant(1.)]));
+        assert_eq!("(2 + 1 + 1)".parse::<Expr>().unwrap(), Expr::Add(vec![Expr::Constant(2.), Expr::Constant(1.), Expr::Constant(1.)]));
+    }
+
+    #[test]
+    fn mul() {
+        assert_eq!("(2 * 1)".parse::<Expr>().unwrap(), Expr::Mul(vec![Expr::Constant(2.), Expr::Constant(1.)]));
+        assert_eq!("(2 * 1 * 1)".parse::<Expr>().unwrap(), Expr::Mul(vec![Expr::Constant(2.), Expr::Constant(1.), Expr::Constant(1.)]));
+    }
+
+    #[test]
+    fn nested() {
+        assert_eq!("((1 * 0.5) * q_0..)".parse::<Expr>().unwrap(), (Expr::Constant(1.) * Expr::Constant(0.5)) * Expr::Coord(0, 2));
     }
 }

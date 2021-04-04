@@ -1,3 +1,7 @@
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
+
 mod drawable;
 mod dynamic;
 mod pendulum;

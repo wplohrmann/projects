@@ -1,0 +1,11 @@
+digit = {'0'..'9'}
+float = { digit ~ ("." ~ digit*)? }
+q = { "q_" }
+dots = { "."* }
+
+coord = { q ~ digit* ~ dots } // e.g. "q_0.."
+
+sum = { "(" ~ expr ~ (" + " ~ expr)* ~ ")" } // e.g. (5 + 5)
+mul = { "(" ~ expr ~ (" * " ~ expr)* ~ ")" } // e.g. (5 * 5)
+
+expr = _{ float | coord | sum | mul }

@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 iced = { version = "0.3.0", features = ["canvas", "tokio", "debug"]}
 chrono = "0.4"
+pest = "2.1.3"
+pest_derive = "2.1.0"
