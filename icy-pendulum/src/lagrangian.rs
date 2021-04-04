@@ -61,18 +61,53 @@ impl Expr {
             last = simplified;
         }
     }
+
+    pub fn descale(&self) -> (f32, Expr) {
+        match self {
+            Expr::Mul(es) => {
+                let mut factors = Vec::new();
+                let mut scale = 1.;
+                for sub_e in es {
+                    match sub_e {
+                        Expr::Constant(k) => scale *= k,
+                        other => factors.push(other.clone()),
+                    }
+                }
+                (scale, Expr::Mul(factors))
+            },
+            other => (1., other.clone())
+        }
+}
 }
 
+
 pub fn simplify_add(es: &Vec<Expr>) -> Expr {
-    let mut simplified = es.iter()
+    let mut descaled = es.iter()
         .filter(|&e| e != &Expr::Constant(0.))
-        .map(|e| e.simplify())
-        .collect::<Vec<Expr>>();
+        .map(|e| e.simplify().descale())
+        .collect::<Vec<(f32, Expr)>>();
 
-    if simplified.len() == 1 { return simplified[0].clone(); }
-    simplified.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    if descaled.len() == 1 { return descaled[0].0 * descaled[0].1.clone(); }
+    descaled.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-    Expr::Add(simplified)
+    let mut collected = Vec::new();
+    let mut last_scale = 1.;
+    for e in descaled { // Similar terms should be adjacent
+        if collected.len() == 0 {
+            last_scale = e.0;
+            collected.push(e.1);
+        } else {
+            let last_index = collected.len() - 1;
+            if e.1 == collected[last_index] {
+                collected[last_index] = collected[last_index].clone() * Expr::Constant(last_scale + e.0)
+            } else {
+                last_scale = e.0;
+                collected.push(e.1);
+            }
+        }
+    }
+
+    Expr::Add(collected)
 }
 
 pub fn simplify_mul(es: &Vec<Expr>) -> Expr {
