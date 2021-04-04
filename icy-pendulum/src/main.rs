@@ -19,13 +19,6 @@ use pendulum::Pendulum;
 use lagrangian::{MassOnASpring, Lagrangian, Expr};
 
 pub fn main() -> iced::Result {
-    // let mass_on_a_spring = MassOnASpring{x: 5., v: 5., omega_sq: 6.};
-    // println!("{}", mass_on_a_spring.lagrangian().dot().simplify());
-    let e = Expr::Constant(0.) + (Expr::Constant(0.5) + Expr::Coord(0, 2));
-    println!("{}", e.simplify());
-    if true {
-        panic!("ohno");
-    }
     App::<Pendulum>::run(Settings {
         antialiasing: true,
         ..Settings::default()

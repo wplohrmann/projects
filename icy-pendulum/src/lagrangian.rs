@@ -250,4 +250,11 @@ mod tests {
     fn nested() {
         assert_eq!("((1 * 0.5) * q_0..)".parse::<Expr>().unwrap(), (Expr::Constant(1.) * Expr::Constant(0.5)) * Expr::Coord(0, 2));
     }
+
+    #[test]
+    fn simplify() {
+        assert_eq!("(1 * 0.5 * q_0.. * q_0.)".parse::<Expr>().unwrap().simplify(), "(0.5 * q_0. * q_0..)".parse().unwrap());
+        assert_eq!("(1 * 0 * (q_0. * q_0.))".parse::<Expr>().unwrap().simplify(), "0".parse().unwrap());
+        assert_eq!("(0 + (-1 * (0 + (3 * q_0 * q_0.) + (3 * q_0 * q_0.))))".parse::<Expr>().unwrap().simplify(), "(-1 * ((3 * q_0 * q_0.) + (3 * q_0 * q_0.)))".parse().unwrap());
+    }
 }

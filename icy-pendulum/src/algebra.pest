@@ -1,5 +1,5 @@
 digit = {'0'..'9'}
-float = { digit ~ ("." ~ digit*)? }
+float = { "-"? ~ digit ~ ("." ~ digit*)? }
 q = { "q_" }
 dots = { "."* }
 
