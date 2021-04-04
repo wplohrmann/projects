@@ -207,10 +207,7 @@ impl std::str::FromStr for Expr {
                         .reduce(|a, b| a*b)
                         .unwrap()
                 },
-                Rule::digit => todo!("digit"),
-                Rule::q => todo!("q"),
-                Rule::dots => todo!("dots"),
-                Rule::expr => todo!("expr"),
+                Rule::digit | Rule::q | Rule::dots | Rule::expr => unreachable!("Trying to parse sub-expression out of context")
             }
         }
         return Ok(parse_value(pair));
