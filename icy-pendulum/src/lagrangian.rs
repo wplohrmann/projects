@@ -47,18 +47,184 @@ impl Expr {
     }
 
     pub fn simplify(&self) -> Expr {
+        let mut simplified = self.clone();
         let mut last = self.clone();
         loop {
-            let simplified = match self {
-                Expr::Add(es) => simplify_add(es),
-                Expr::Mul(es) => simplify_mul(es),
-                _ => self.clone(),
-            };
+            if let Some(e) = simplified.apply_add_identity() { simplified = e; }
+            else if let Some(e) = simplified.apply_multiply_by_zero() { simplified = e; }
+            else if let Some(e) = simplified.apply_mul_constants() { simplified = e; }
+            else if let Some(e) = simplified.apply_add_constants() { simplified = e; }
+            else if let Some(e) = simplified.apply_mul_identity() { simplified = e; }
+            else if let Some(e) = simplified.apply_sort_children() { simplified = e; }
+            else if let Some(e) = simplified.apply_undo_nested_add() { simplified = e; }
+            else if let Some(e) = simplified.apply_undo_nested_mul() { simplified = e; }
+            else {
+                match simplified {
+                    Expr::Add(es) => simplified = Expr::Add(es.iter().map(|e| e.simplify()).collect()),
+                    Expr::Mul(es) => simplified = Expr::Mul(es.iter().map(|e| e.simplify()).collect()),
+                    _ => {
+                        if simplified != *self {
+                            println!("Simplified {} to {}", self, simplified);
+                        }
+                        return simplified;
+                    }
+                }
+            }
             if simplified == last {
-                println!("Simplified {} to {}", self, simplified);
                 return simplified;
             }
-            last = simplified;
+            last = simplified.clone();
+        }
+    }
+
+    pub fn apply_undo_nested_add(&self) -> Option<Expr> {
+        match self {
+            Expr::Add(es) => {
+                let mut simplified = Vec::new();
+                for e in es {
+                    match e.clone() {
+                        Expr::Add(mut sub_es) => simplified.append(&mut sub_es),
+                        other => simplified.push(other)
+                    }
+                }
+                return if simplified.len() != es.len() {
+                    Some(Expr::Add(simplified))
+                } else { None }
+            },
+            _ => return None
+        }
+    }
+
+    pub fn apply_undo_nested_mul(&self) -> Option<Expr> {
+        match self {
+            Expr::Mul(es) => {
+                let mut simplified = Vec::new();
+                for e in es {
+                    match e.clone() {
+                        Expr::Mul(mut sub_es) => simplified.append(&mut sub_es),
+                        other => simplified.push(other)
+                    }
+                }
+                return if simplified.len() != es.len() {
+                    Some(Expr::Mul(simplified))
+                } else { None }
+            },
+            _ => return None
+        }
+    }
+
+    pub fn apply_sort_children(&self) -> Option<Expr> {
+        match self {
+            Expr::Mul(es) => {
+                let mut sorted = es.clone();
+                sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                if &sorted != es {
+                    return Some(Expr::Mul(sorted));
+                } else {
+                    return None;
+                }
+            },
+            Expr::Add(es) => {
+                let mut sorted = es.clone();
+                sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                if &sorted != es {
+                    return Some(Expr::Add(sorted));
+                } else {
+                    return None;
+                }
+            },
+            _ => return None,
+        }
+    }
+
+    pub fn apply_multiply_by_zero(&self) -> Option<Expr> {
+        match self {
+            Expr::Mul(es) => {
+                if es.iter().any(|e| e == &Expr::Constant(0.)) {
+                    return Some(Expr::Constant(0.));
+                }
+            },
+            _ => ()
+        }
+
+        return None;
+    }
+
+    pub fn apply_mul_constants(&self) -> Option<Expr> {
+        match self {
+            Expr::Mul(es) => {
+                let mut simplified = Vec::new();
+                let mut scale = 1.;
+                for e in es {
+                    match e {
+                        Expr::Constant(k) => scale *= k,
+                        _ => simplified.push(e.clone()),
+                    }
+                }
+                if scale != 1. {
+                    simplified.push(Expr::Constant(scale));
+                }
+                if simplified.len() != es.len() {
+                    Some(Expr::Mul(simplified))
+                } else {
+                    None
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn apply_add_constants(&self) -> Option<Expr> {
+        match self {
+            Expr::Add(es) => {
+                let mut simplified = Vec::new();
+                let mut scale = 0.;
+                for e in es {
+                    match e {
+                        Expr::Constant(k) => scale += k,
+                        _ => simplified.push(e.clone()),
+                    }
+                }
+                if scale != 0. {
+                    simplified.push(Expr::Constant(scale));
+                }
+                if simplified.len() != es.len() {
+                    Some(Expr::Add(simplified))
+                } else {
+                    None
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn apply_add_identity(&self) -> Option<Expr> {
+        match self {
+            Expr::Add(es) => {
+                let filtered: Vec<Expr> = es.iter().cloned().filter(|e| e != &Expr::Constant(0.)).collect();
+                if filtered.len() != es.len() {
+                    Some(Expr::Add(filtered))
+                }
+                else {
+                    return None;
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub fn apply_mul_identity(&self) -> Option<Expr> {
+        match self {
+            Expr::Mul(es) => {
+                let filtered: Vec<Expr> = es.iter().cloned().filter(|e| e != &Expr::Constant(1.)).collect();
+                if filtered.len() != es.len() {
+                    Some(Expr::Mul(filtered))
+                }
+                else {
+                    return None;
+                }
+            },
+            _ => None
         }
     }
 
@@ -75,63 +241,13 @@ impl Expr {
                 }
                 (scale, Expr::Mul(factors))
             },
+            Expr::Constant(k) => (*k, Expr::Constant(1.)),
             other => (1., other.clone())
         }
 }
 }
 
 
-pub fn simplify_add(es: &Vec<Expr>) -> Expr {
-    let mut descaled = es.iter()
-        .filter(|&e| e != &Expr::Constant(0.))
-        .map(|e| e.simplify().descale())
-        .collect::<Vec<(f32, Expr)>>();
-
-    if descaled.len() == 1 { return descaled[0].0 * descaled[0].1.clone(); }
-    descaled.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-
-    let mut collected = Vec::new();
-    let mut last_scale = 1.;
-    for e in descaled { // Similar terms should be adjacent
-        if collected.len() == 0 {
-            last_scale = e.0;
-            collected.push(e.1);
-        } else {
-            let last_index = collected.len() - 1;
-            if e.1 == collected[last_index] {
-                collected[last_index] = collected[last_index].clone() * Expr::Constant(last_scale + e.0)
-            } else {
-                last_scale = e.0;
-                collected.push(e.1);
-            }
-        }
-    }
-
-    Expr::Add(collected)
-}
-
-pub fn simplify_mul(es: &Vec<Expr>) -> Expr {
-
-    let mut simplified = Vec::new();
-    for e in es {
-        match e {
-            zero if *zero == Expr::Constant(0.) => return Expr::Constant(0.), // 0 * anything is 0
-            one if *one == Expr::Constant(1.) => (), // 0 * anything is 0
-            Expr::Mul(sub_es) => { // Flatten nested multiplication
-                let simplified_sub_es = simplify_mul(sub_es);
-                match simplified_sub_es {
-                    Expr::Mul(mut x) => simplified.append(&mut x),
-                    _ => return Expr::Constant(0.),
-                }
-            }
-            e => simplified.push(e.simplify()) // anything else is pushed onto the stack of factors
-        };
-    }
-
-    if simplified.len() == 1 { return simplified[0].clone(); }
-    simplified.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    Expr::Mul(simplified)
-}
 
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -252,41 +368,102 @@ impl std::str::FromStr for Expr {
 #[cfg(test)]
 mod tests {
     use super::Expr;
+
     #[test]
-    fn coord() {
+    fn parse_coord() {
         assert_eq!("q_0".parse::<Expr>().unwrap(), Expr::Coord(0, 0));
         assert_eq!("q_1.".parse::<Expr>().unwrap(), Expr::Coord(1, 1));
         assert_eq!("q_2..".parse::<Expr>().unwrap(), Expr::Coord(2, 2));
     }
 
     #[test]
-    fn float() {
+    fn parse_float() {
         assert_eq!("0.1".parse::<Expr>().unwrap(), Expr::Constant(0.1));
         assert_eq!("5".parse::<Expr>().unwrap(), Expr::Constant(5.));
         assert_eq!("1.1".parse::<Expr>().unwrap(), Expr::Constant(1.1));
     }
 
     #[test]
-    fn add() {
+    fn parse_add() {
         assert_eq!("(2 + 1)".parse::<Expr>().unwrap(), Expr::Add(vec![Expr::Constant(2.), Expr::Constant(1.)]));
         assert_eq!("(2 + 1 + 1)".parse::<Expr>().unwrap(), Expr::Add(vec![Expr::Constant(2.), Expr::Constant(1.), Expr::Constant(1.)]));
     }
 
     #[test]
-    fn mul() {
+    fn parse_mul() {
         assert_eq!("(2 * 1)".parse::<Expr>().unwrap(), Expr::Mul(vec![Expr::Constant(2.), Expr::Constant(1.)]));
         assert_eq!("(2 * 1 * 1)".parse::<Expr>().unwrap(), Expr::Mul(vec![Expr::Constant(2.), Expr::Constant(1.), Expr::Constant(1.)]));
     }
 
     #[test]
-    fn nested() {
+    fn parse_nested() {
         assert_eq!("((1 * 0.5) * q_0..)".parse::<Expr>().unwrap(), (Expr::Constant(1.) * Expr::Constant(0.5)) * Expr::Coord(0, 2));
     }
 
+    fn descales_to(e1: &str, descaled: (f32, &str)) {
+        let e1_parsed = e1.parse::<Expr>().unwrap();
+        let e1_descaled = e1_parsed.descale();
+        assert_eq!((e1_descaled.0, e1_descaled.1.to_string().as_str()), descaled);
+    }
+
     #[test]
-    fn simplify() {
-        assert_eq!("(1 * 0.5 * q_0.. * q_0.)".parse::<Expr>().unwrap().simplify(), "(0.5 * q_0. * q_0..)".parse().unwrap());
-        assert_eq!("(1 * 0 * (q_0. * q_0.))".parse::<Expr>().unwrap().simplify(), "0".parse().unwrap());
-        assert_eq!("(0 + (-1 * (0 + (3 * q_0 * q_0.) + (3 * q_0 * q_0.))))".parse::<Expr>().unwrap().simplify(), "(-1 * ((3 * q_0 * q_0.) + (3 * q_0 * q_0.)))".parse().unwrap());
+    fn descale_constant() {
+        descales_to("5.", (5., "1"));
+    }
+
+    #[test]
+    fn descale_mul() {
+        descales_to("(5. * 2. * q_0 * q_5.)", (10., "(q_0 * q_5.)"));
+    }
+
+    #[test]
+    fn descale_add() {
+        descales_to("(5. + 2. + q_0 + q_5.)", (1., "(5 + 2 + q_0 + q_5.)"));
+    }
+
+
+
+    fn simplifies_to(e1: &str, e2: &str) {
+        let e1_parsed = e1.parse::<Expr>().unwrap();
+        assert_eq!(e1_parsed.simplify().to_string(), e2);
+    }
+
+    // simplify_mul
+    #[test]
+    fn simplify_mul_reduces_to_zero() {
+        simplifies_to("(1 * 0 * (q_0. * q_0.))", "0");
+    }
+
+    #[test]
+    fn simplify_mul_one_disappears() {
+        simplifies_to("(1 * 0.5 * q_0.. * q_0.)", "(0.5 * q_0. * q_0..)");
+    }
+
+    #[test]
+    fn simplify_mul_scales_combine() {
+        simplifies_to("(-1 * ((q_0 * q_0. * 6)))", "(-6 * q_0 * q_0.)");
+    }
+
+    // simplify_add
+    #[test]
+    fn simplify_add_scales_combine() {
+        simplifies_to("(-1 + ((q_0 + q_0. + 6)))", "(5 + q_0 + q_0.)");
+    }
+
+    #[test]
+    fn simplify_add_nested() {
+        simplifies_to("(q_1.... + ((q_0 + q_0. + 6)))", "(6 + q_0 + q_0. + q_1....)");
+    }
+
+    #[test]
+    fn simplify_add_zero_disappears() {
+        simplifies_to("(0 + 0.5 + q_0.. + q_0.)", "(0.5 + q_0. + q_0..)");
+    }
+
+
+    //simplify
+    #[test]
+    fn simplify_nested() {
+        simplifies_to("(0 + (-1 * (0 + (3 * q_0 * q_0.) + (3 * q_0 * q_0.))))", "(-6 * q_0 * q_0.))");
     }
 }
