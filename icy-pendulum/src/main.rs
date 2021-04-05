@@ -6,6 +6,8 @@ mod drawable;
 mod dynamic;
 mod pendulum;
 mod lagrangian;
+mod expr;
+mod mass_on_a_spring;
 
 use iced::{
     canvas::{self, Cache, Canvas, Cursor, Geometry, LineCap, Path, Stroke},
@@ -16,7 +18,9 @@ use iced::{
 use drawable::Drawable;
 use dynamic::Dynamic;
 use pendulum::Pendulum;
-use lagrangian::{MassOnASpring, Lagrangian, Expr};
+use lagrangian::Lagrangian;
+use mass_on_a_spring::MassOnASpring;
+use expr::Expr;
 
 pub fn main() -> iced::Result {
     App::<Pendulum>::run(Settings {
