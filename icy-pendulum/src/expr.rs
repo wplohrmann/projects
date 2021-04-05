@@ -2,8 +2,6 @@ use pest::Parser;
 use pest::error::Error;
 use pest::iterators::Pair;
 
-use std::ops;
-
 #[derive(Parser)]
 #[grammar = "algebra.pest"]
 struct AlgebraParser;
@@ -43,6 +41,14 @@ impl Expr {
         }
     }
 
+    pub fn contains(&self, variable: &Expr) -> bool {
+        match self {
+            Expr::Coord(_, _) => self == variable,
+            Expr::Add(es) | Expr::Mul(es) => es.iter().any(|e| e.contains(variable)),
+            _ => false
+        }
+    }
+
     pub fn simplify(&self) -> Expr {
         let mut simplified = self.clone();
         loop {
@@ -62,9 +68,6 @@ impl Expr {
                     Expr::Add(es) => Expr::Add(es.iter().map(|e| e.simplify()).collect()),
                     Expr::Mul(es) => Expr::Mul(es.iter().map(|e| e.simplify()).collect()),
                     _ => {
-                        if simplified != *self {
-                            println!("Simplified {} to {}", self, simplified);
-                        }
                         return simplified;
                     }
                 };
@@ -328,7 +331,7 @@ impl std::fmt::Display for Expr {
     }
 }
 
-impl ops::Mul<Expr> for f32 {
+impl std::ops::Mul<Expr> for f32 {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
@@ -336,7 +339,7 @@ impl ops::Mul<Expr> for f32 {
     }
 }
 
-impl ops::Mul<Expr> for &f32 {
+impl std::ops::Mul<Expr> for &f32 {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
@@ -344,7 +347,7 @@ impl ops::Mul<Expr> for &f32 {
     }
 }
 
-impl ops::Add<Expr> for Expr {
+impl std::ops::Add<Expr> for Expr {
     type Output = Expr;
 
     fn add(self, rhs: Expr) -> Self::Output {
@@ -359,7 +362,7 @@ impl ops::Add<Expr> for Expr {
     }
 }
 
-impl ops::Mul<Expr> for Expr {
+impl std::ops::Mul<Expr> for Expr {
     type Output = Expr;
 
     fn mul(self, rhs: Expr) -> Self::Output {
@@ -374,7 +377,7 @@ impl ops::Mul<Expr> for Expr {
     }
 }
 
-impl ops::Sub<Expr> for Expr {
+impl std::ops::Sub<Expr> for Expr {
     type Output = Expr;
 
     fn sub(self, rhs: Expr) -> Self::Output {

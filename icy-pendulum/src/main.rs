@@ -8,6 +8,7 @@ mod pendulum;
 mod lagrangian;
 mod expr;
 mod mass_on_a_spring;
+mod equation;
 
 use iced::{
     canvas::{self, Cache, Canvas, Cursor, Geometry, LineCap, Path, Stroke},
