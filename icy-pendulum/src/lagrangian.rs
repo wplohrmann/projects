@@ -58,6 +58,8 @@ impl Expr {
             else if let Some(e) = simplified.apply_undo_nested_add() { simplified = e; }
             else if let Some(e) = simplified.apply_undo_nested_mul() { simplified = e; }
             else if let Some(e) = simplified.apply_distribute() { simplified = e; }
+            else if let Some(e) = simplified.apply_collect_terms() { simplified = e; }
+            else if let Some(e) = simplified.apply_unpack_single_child() { simplified = e; }
             else {
                 let nested_simplified = match &simplified {
                     Expr::Add(es) => Expr::Add(es.iter().map(|e| e.simplify()).collect()),
@@ -268,7 +270,52 @@ impl Expr {
             Expr::Constant(k) => (*k, Expr::Constant(1.)),
             other => (1., other.clone())
         }
-}
+    }
+
+    pub fn apply_unpack_single_child(&self) -> Option<Expr> {
+        match self {
+            Expr::Add(es) if es.len() == 1 => { Some(es[0].clone()) },
+            Expr::Mul(es) if es.len() == 1 => { Some(es[0].clone()) },
+            _ => None
+        }
+    }
+    pub fn apply_collect_terms(&self) -> Option<Expr> {
+        match self {
+            Expr::Add(es) => {
+                let mut descaled: Vec<_> = es.iter().map(|e| e.descale()).collect();
+                descaled.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+                // Identical terms should now be adjacent
+                let mut terms = Vec::new();
+                let mut scales = Vec::new();
+                for e in descaled {
+                    if terms.len() == 0 {
+                        terms.push(e.1);
+                        scales.push(e.0);
+                    } else {
+                        if terms.last().unwrap() == &e.1 {
+                            scales[terms.len()-1] += e.0;
+                        } else {
+                            terms.push(e.1);
+                            scales.push(e.0);
+                        }
+
+                    }
+                }
+                for i in 0..terms.len() {
+                    let scale = scales[i];
+                    if scale != 1. {
+                        terms[i] = Expr::Constant(scale) * terms[i].clone();
+                    }
+                }
+                match terms.len() {
+                    n if n == es.len() => None,
+                    1 => Some(terms[0].clone()),
+                    _ => Some(Expr::Add(terms))
+                }
+            },
+            _ => None
+        }
+    }
 }
 
 
@@ -488,6 +535,6 @@ mod tests {
     //simplify
     #[test]
     fn simplify_nested() {
-        simplifies_to("(0 + (-1 * (0 + (3 * q_0 * q_0.) + (3 * q_0 * q_0.))))", "(-6 * q_0 * q_0.))");
+        simplifies_to("(0 + (-1 * (0 + (3 * q_0 * q_0.) + (3 * q_0 * q_0.))))", "(-6 * q_0 * q_0.)");
     }
 }
