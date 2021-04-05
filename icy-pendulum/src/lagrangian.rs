@@ -12,8 +12,8 @@ struct AlgebraParser;
 pub enum Expr {
     Constant(f32), // Constant value
     Coord(usize, usize), // An indexed coordinate, time-differentiated n times
-    Add(Vec<Expr>),
     Mul(Vec<Expr>),
+    Add(Vec<Expr>),
     // Sin(Box<Expr>), // sin (trig)
     // Cos(Box<Expr>), // cos (trig)
 }
@@ -48,7 +48,6 @@ impl Expr {
 
     pub fn simplify(&self) -> Expr {
         let mut simplified = self.clone();
-        let mut last = self.clone();
         loop {
             if let Some(e) = simplified.apply_add_identity() { simplified = e; }
             else if let Some(e) = simplified.apply_multiply_by_zero() { simplified = e; }
@@ -58,22 +57,47 @@ impl Expr {
             else if let Some(e) = simplified.apply_sort_children() { simplified = e; }
             else if let Some(e) = simplified.apply_undo_nested_add() { simplified = e; }
             else if let Some(e) = simplified.apply_undo_nested_mul() { simplified = e; }
+            else if let Some(e) = simplified.apply_distribute() { simplified = e; }
             else {
-                match simplified {
-                    Expr::Add(es) => simplified = Expr::Add(es.iter().map(|e| e.simplify()).collect()),
-                    Expr::Mul(es) => simplified = Expr::Mul(es.iter().map(|e| e.simplify()).collect()),
+                let nested_simplified = match &simplified {
+                    Expr::Add(es) => Expr::Add(es.iter().map(|e| e.simplify()).collect()),
+                    Expr::Mul(es) => Expr::Mul(es.iter().map(|e| e.simplify()).collect()),
                     _ => {
                         if simplified != *self {
                             println!("Simplified {} to {}", self, simplified);
                         }
                         return simplified;
                     }
+                };
+                if nested_simplified == simplified {
+                    return simplified;
                 }
+                simplified = nested_simplified;
             }
-            if simplified == last {
-                return simplified;
-            }
-            last = simplified.clone();
+        }
+    }
+
+    pub fn apply_distribute(&self) -> Option<Expr> {
+        // Addition expressions float to the end, so we only have to look at the last element of a
+        // Mul.
+        match self {
+            Expr::Mul(es) => {
+                if es.len() == 1 { return None; }
+                match es.last().unwrap() {
+                    Expr::Add(sub_es) => {
+                        let mut terms = Vec::new();
+                        for e in sub_es {
+                            let mut factors = es.clone();
+                            let last_index = factors.len() - 1;
+                            factors[last_index] = e.clone();
+                            terms.push(Expr::Mul(factors));
+                        }
+                        Some(Expr::Add(terms))
+                    },
+                    _ => None
+                }
+            },
+            _ => None
         }
     }
 
