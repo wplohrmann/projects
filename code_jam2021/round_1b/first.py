@@ -5,31 +5,7 @@ def debug(*args, **kwargs):
     pass
 debug = print
 
-def solve_naive(h,m,s):
-    """
-    """
-    mods = [10**9, 60, 60, 12]
-    h_ns = h % mods[0]
-    m_ns = (m // 12) % mods[0]
-    s_ns = (s // 720) % mods[0]
-    if not (h_ns == m_ns == s_ns):
-        return None
-
-    h_s = (h // mods[0]) % mods[1]
-    m_s = (m // (12*mods[0])) % mods[1]
-    s_s = (s // (720*mods[0])) % mods[1]
-    if not (h_s == m_s == s_s):
-        return None
-
-    h_m = (h // (mods[0]*mods[1])) % mods[2]
-    m_m = (m // (mods[0]*mods[1]*12)) % mods[2]
-    if not (h_m == m_m):
-        return None
-
-    h_h = (h // (mods[0]*mods[1]*mods[2])) % mods[3]
-    return h_h, h_m, h_s, h_ns
-
-def solve(h, m, s):
+def solve_naive(h, m, s):
     shift = 10**9
     for i in range(12*60*60):
         hours = i // (60*60)
@@ -43,6 +19,65 @@ def solve(h, m, s):
             return hours, minutes, seconds, 0
 
     return None
+
+def mul_inv(a, b):
+    """
+    return x1 s.t. (x1*a)%b == 1
+    """
+    b0 = b
+    x0, x1 = 0, 1
+    if b == 1:
+        return 1
+    while a > 1:
+        if b == 0:
+            return None
+        q = a // b
+        a, b = b, a%b
+        x0, x1 = x1 - q * x0, x0
+    if x1 < 0:
+        x1 += b0
+    return x1
+
+def solve(h, m, s):
+    """
+    Get ns, then go back in time
+    """
+    remainder = s % 720
+    h += 720-remainder
+    m += 720-remainder
+    s += 720-remainder
+    if m % 12 != 0:
+        return None
+    # (h + 720*k) == (m + 720*k)//12 == (s + 720*k)//720 mod 10**9
+    # m//12 - h == (720-60)*k mod 10**9
+    # s//720 - m//12 == (60-1)*k mod 10**9
+    # s//720 - h == (720 - 1)*k mod 10**9
+    mod = 10**9
+    inv_719 = mul_inv(719, mod)
+    inv_59 = mul_inv(59, mod)
+    k1 = (inv_719 * (s//720-h)) % mod
+    k2 = (inv_59 * (s//720-m//12)) % mod
+    if k1 != k2:
+        return None
+    h += 720*k1
+    m += 720*k1
+    s += 720*k1
+
+    h_ns = h % mod
+    m_ns = (m//12)%mod
+    s_ns = (s//720)%mod
+    assert h_ns == m_ns == s_ns
+
+    # Go back in time then solve with old solution
+    h -= h_ns
+    m -= 12*h_ns
+    s -= 720*h_ns
+    solution = solve_naive(h, m, s)
+    if solution is not None:
+        return solution[:3] + (h_ns,)
+
+
+
 
 if __name__=="__main__":
     T = int(input())
