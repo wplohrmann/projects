@@ -2,7 +2,7 @@ import numpy as np
 
 def debug(*args, **kwargs):
     pass
-debug = print
+# debug = print
 
 def solve(n, k, tickets):
     """
@@ -24,27 +24,40 @@ def solve(n, k, tickets):
             area = (best, best, best)
         else:
             assert i > 0
-            best = (unique[i-1]+unique[i]) // 2
-            distance_up = unique[i]-best-1 # nums in between
-            distance_down = best - unique[i-1]-1 # nums in between
-            upper = best+distance_up//2
-            lower = best-distance_down//2
-            if distance_up%2 ==1 and distance_down%2 == 1:
-                best -= 1
-                lower -= 1
-            area = (lower, upper, best)
+            union = 0
+            for offset in [-1, 0, 1]:
+                best = (unique[i-1]+unique[i]) // 2 +offset
+                distance_up = unique[i]-best-1 # nums in between
+                distance_down = best - unique[i-1]-1 # nums in between
+                upper = best+distance_up//2
+                lower = best-distance_down//2
+                if upper-lower+1 > union:
+                    union = upper-lower+1
+                    _lower = lower
+                    _upper = upper
+                    _best = best
+            area = (_lower, _upper, _best)
         areas.append(area)
     if unique[-1]+1 <= k:
         areas.append((unique[-1]+1, k, unique[-1]+1))
     best = 0
+    debug("UNique:", unique)
+    debug("len(areas", len(areas), "len(unique)", len(unique))
     for i in range(len(areas)):
-        for j in range(len(areas)):
+        for j in range(len(areas)): # i  and j are the segments where each ticket goes (1..unique[i]) 
             union = 0
             union += areas[i][1] - areas[i][0] + 1
             if i != j:
-                union += areas[j][1] - areas[j][0] + 1 # Otherwise they're identical
+                union += areas[j][1] - areas[j][0] + 1 # Different segments
+
             if union > best:
                 best = union
+    for i in range(len(unique)):
+        if i == 0:
+            continue
+        union = unique[i]-unique[i-1]-1
+        if union > best:
+            best=  union
     debug(areas)
     return best / k
 
