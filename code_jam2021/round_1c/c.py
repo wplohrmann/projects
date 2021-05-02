@@ -17,8 +17,10 @@ def negate(x):
     '1'
     >>> negate("1")
     '0'
+    >>> negate("1111111111")
+    '0'
     """
-    if x == "1":
+    if x == "1"*len(x):
         return "0"
     return x.translate(str.maketrans({"0": "1", "1": "0"})).lstrip("0")
 
@@ -27,7 +29,7 @@ def solve(start, stop):
     """
     states = set()
     states.add(start)
-    N = 50
+    N = 40
     for i in range(N):
         if stop in states:
             return i
