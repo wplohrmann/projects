@@ -1,0 +1,6 @@
+pysoundfile
+numpy
+scipy
+matplotlib
+bokeh
+pandas
