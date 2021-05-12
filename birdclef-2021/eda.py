@@ -19,8 +19,10 @@ def analyse(f):
         sd.play(data, samplerate)
         clip = spectrogram(path)
         clip -= clip.mean()
-        clip /= np.std(clip)
+
         convolved = signal.correlate(clip, sound, mode="valid")
+        calibration = signal.correlate(clip**2, np.ones_like(sound), mode="valid")
+        convolved /= np.sqrt(calibration)
 
         plt.subplot(211)
         plt.imshow(clip)
@@ -45,7 +47,7 @@ base = os.path.join(short_audio_path, bird)
 
 sound = spectrogram(os.path.join(base, os.listdir(base)[0]))[:,150:250]
 sound -= sound.mean()
-sound /= np.std(sound)
+sound /= np.sqrt(np.sum(sound**2))
 
 for i, f in enumerate(os.listdir(base)):
     path = os.path.join(base, f)
