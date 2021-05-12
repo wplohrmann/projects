@@ -24,12 +24,11 @@ def analyse(f):
         calibration = signal.correlate(clip**2, np.ones_like(sound), mode="valid")
         convolved /= np.sqrt(calibration)
 
-        plt.subplot(211)
-        plt.imshow(clip)
-        plt.title(f)
+        fig, axes = plt.subplots(2, 1, sharex=True)
+        axes[0].imshow(clip)
+        axes[0].set_title(f)
 
-        plt.subplot(212)
-        plt.plot(convolved[0])
+        axes[1].plot(convolved[0])
         plt.show()
 
     finally:
