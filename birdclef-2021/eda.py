@@ -24,15 +24,20 @@ def analyse(f):
         calibration = signal.correlate(clip**2, np.ones_like(sound), mode="valid")
         convolved /= np.sqrt(calibration)
 
-        fig, axes = plt.subplots(2, 1, sharex=True)
+        fig, axes = plt.subplots(3, 1, sharex=True)
         axes[0].imshow(clip)
         axes[0].set_title(f)
 
         axes[1].plot(convolved[0])
+        axes[1].set_title("Correlation")
+
+        axes[2].plot(clip.sum(axis=0))
+        axes[2].set_title("Power")
         plt.show()
 
     finally:
         sd.stop()
+
 
 
 metadata_path = "input/train_metadata.csv"
