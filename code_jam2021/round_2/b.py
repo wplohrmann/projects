@@ -6,13 +6,9 @@ def debug(*args, **kwargs):
 # debug = print
 
 @lru_cache(maxsize=None)
-def solve(n):
+def solve(n, first=True):
     """
-    >>> solve(33+48+48*13)
-    7
-    >>> solve(6)
-    1
-    >>> solve(1024)
+    >>> for i in range(20): solve(i)
     """
     original_n = n
     if n < 3:
@@ -20,10 +16,14 @@ def solve(n):
 
     possibilities =[]
     for factor in factors(n):
-        if factor == 1:
-            continue
+        if first:
+            if factor < 3:
+                continue
+        else:
+            if factor < 2:
+                continue
         remainder = n//factor - 1
-        possibilities.append(solve(remainder))
+        possibilities.append(solve(remainder, first=False))
     return 1 + max(possibilities)
 
 

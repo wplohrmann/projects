@@ -10,7 +10,7 @@ def solve():
     pass
 
 if __name__=="__main__":
-    T = int(input())
+    T, N = map(int, input().split())
 
     for t in range(T):
         solution = solve()
