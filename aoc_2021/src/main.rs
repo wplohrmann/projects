@@ -1,7 +1,7 @@
-mod day12;
+mod day13;
 
-use day12::*;
+use day13::*;
 
 fn main() {
-    part2()
+    part1()
 }
