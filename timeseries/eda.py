@@ -4,6 +4,7 @@ from typing import List, cast
 
 import numpy as np
 import matplotlib.pyplot as plt
+from xgboost import XGBRegressor
 
 from floats import Currency, Price, Stock
 
@@ -25,6 +26,7 @@ with open("TSLA.csv") as f:
 # plt.show()
 
 class Model:
+    historical: List[float]
     def step(self, price: Price, stocks: Stock, available: Currency) -> Stock:
         """
         Given a current stock price `price`, amount of stocks `stocks` and money available
@@ -32,6 +34,9 @@ class Model:
         more stock than you have money for or selling more than you have raises an assertion error.
         """
         raise NotImplementedError
+
+    def fit(self) -> None:
+        pass
 
 class Evaluator:
     def __init__(self, prices: List[Price]):
@@ -63,6 +68,9 @@ class BuyOnce(Model):
     def __str__(self) -> str:
         return f"BuyOnce()"
 
+    def fit(self) -> None:
+        pass
+
     def step(self, price: Price, stocks: Stock, available: Currency) -> Stock:
         if self.bought:
             return Stock(0)
@@ -80,6 +88,9 @@ class SMA(Model):
     def __str__(self) -> str:
         return f"SMA(long={self.long}, short={self.short})"
 
+    def fit(self) -> None:
+        pass
+
     def step(self, price: Price, stocks: Stock, available: Currency) -> Stock:
         self.historical.append(price.value)
         if len(self.historical) < self.long:
@@ -93,17 +104,51 @@ class SMA(Model):
             # Sell everything
             return -stocks
 
+class XGTrader(Model):
+    def __init__(self):
+        self.regressor = XGBRegressor()
+        self.lags = [75, 50, 20, 5, 1, 0]
+
+    def fit(self):
+        lagged = []
+        max_lag = max(self.lags)
+        for lag in self.lags:
+            lagged.append(self.historical[max_lag-lag:len(self.historical)-lag])
+        stacked = np.stack(lagged, axis=1)
+        stacked /= stacked[:, -2:-1]
+        # Don't pass in lag 1
+        self.regressor.fit(stacked[:, :-2], stacked[:, -1:])
+
+    def __str__(self) -> str:
+        return f"XGTrader(lags={self.lags})"
+
+    def step(self, price: Price, stocks: Stock, available: Currency) -> Stock:
+        self.historical.append(price.value)
+        lagged = np.array([self.historical[len(self.historical)-lag] for lag in self.lags[:-1]])
+        lagged /= lagged[-1]
+        prediction = self.regressor.predict(lagged[None, :-1]).item()
+        do_buy = prediction > 1
+        if do_buy:
+            # Buy as much as possible 🚀
+            return available / price
+        else:
+            # Sell everything
+            return -stocks
+
 
 
 rise = prices[-1] - prices[0]
 correction  = np.linspace(0, rise.value, len(prices))
 prices = [price - Price(x) for price, x in zip(prices, correction)]
-evaluator = Evaluator(prices)
+N = 100
+evaluator = Evaluator(prices[:N])
 
-models = [BuyOnce(), SMA(5, 10), SMA(50, 100), SMA(1, 3), SMA(10, 20)]
+models = [BuyOnce(), SMA(5, 10), SMA(50, 100), SMA(1, 3), SMA(10, 20), XGTrader()]
 profits = {}
 for model in models:
-    print(f"===={model}====")
+    print(f"==== {model} ====")
+    model.historical = [x.value for x in prices[N:]]
+    model.fit()
     profits[str(model)] = evaluator.evaluate(model)
 
 print("="*10 + " Summary " + "="*10)
