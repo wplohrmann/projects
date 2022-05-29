@@ -50,7 +50,7 @@ class ImageToImageDataset(Dataset):
         else:
             Y = maybe_Y
 
-        cropped_X, cropped_Y = random_crop([X[None], Y[None]], self.width)
+        cropped_X, cropped_Y = random_crop([X[None], Y], self.width)
 
         return (torch.Tensor(cropped_X), torch.Tensor(cropped_Y))
 

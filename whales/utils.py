@@ -22,3 +22,11 @@ def get_model(init_features, base_model, out_channels, model_path=None):
         model.load_state_dict(torch.load(model_path))
 
     return model
+
+classes = {
+    "Up call": "#000000",
+    "Bubble": "#0000FF",
+    "Click": "#FF0000",
+    "Exhale": "#00FF00",
+    "Humpback song": "#FFFF00",
+}

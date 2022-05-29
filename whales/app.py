@@ -7,7 +7,7 @@ import streamlit as st
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
-from utils import get_spectrogram as _get_spectrogram
+from utils import get_spectrogram as _get_spectrogram, classes
 
 @st.cache
 def get_arrays():
@@ -25,11 +25,13 @@ arrays, samplerate = get_arrays()
 
 label = st.selectbox("Choose file", arrays.keys())
 
+
 st.audio("data/"+label + ".wav")
 
 columns = st.columns(3)
 nperseg = columns[0].number_input("nperseg", value=3000)
 opacity = columns[1].number_input("Opacity", min_value=16, value=128, max_value=255)
+category = columns[2].selectbox("Class", classes.keys())
 
 @st.cache
 def get_spectrogram(nperseg, x, samplerate):
@@ -46,7 +48,7 @@ height = 400
 data = st_canvas(
     background_image=spectrogram,
     stroke_width=stroke_width,
-    stroke_color="#000000" + hex(opacity)[2:],
+    stroke_color=classes[category] + hex(opacity)[2:],
     key="annotations",
     width=width,
     height=height,
@@ -56,9 +58,15 @@ if not st.button("Save"):
     st.stop()
 
 points = []
+class_lookup = {value: key for key, value in classes.items()}
 for i, object in enumerate(data.json_data["objects"]):
     for point in object["path"]:
-        points.append({"Event": i, "t / s": point[-2] * t[-1] / width, "f / Hz": (height - point[-1]) * f[0] / height})
+        points.append({
+            "Event": i,
+            "t / s": point[-2] * t[-1] / width,
+            "f / Hz": (height - point[-1]) * f[0] / height,
+            "Class": class_lookup[object["stroke"][:-2]]
+        })
 df = pd.DataFrame(points)
 st.write(df)
 df.to_csv(f"data/{label}.csv", index=False)
