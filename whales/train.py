@@ -1,3 +1,4 @@
+import argparse
 import os
 import numpy as np
 import pandas as pd
@@ -12,6 +13,10 @@ from tqdm import tqdm
 
 from utils import get_model, get_spectrogram, classes
 from datasets import ImageToImageDataset
+
+parser = argparse.ArgumentParser(description="Train or evaluate a model on marine mammal detection")
+parser.add_argument("--skip-training", action="store_true")
+args = parser.parse_args()
 
 pairs = [
     ("Up_call_EOS_220405_095834.csv", "Up_call_EOS_220405_095834.wav"),
@@ -32,11 +37,16 @@ def get_labels(df, shape, f, t):
 # nperseg = 3000 # Try training on multiple different settings
 np.random.seed(0)
 image_pairs = []
+if args.skip_training:
+    n_spectrograms = 0
+else:
+    n_spectrograms = 20
+
 for pair in pairs:
     samplerate, data = wavfile.read(os.path.join("data", pair[1]))
     df = pd.read_csv(os.path.join("data", pair[0]))
 
-    for i in range(20):
+    for i in range(n_spectrograms):
         nperseg = np.random.randint(2500, 3500)
         f, t, spectrogram = get_spectrogram(nperseg, data, samplerate)
         labels = get_labels(df, spectrogram.shape, f, t)
@@ -54,29 +64,32 @@ for pair in pairs:
             plt.show()
 
 
-batch_size = 32
-learning_rate = 1e-3
-num_samples = 200000
+if args.skip_training:
+    model = get_model(8, ('mateuszbuda/brain-segmentation-pytorch', 'unet'), 5, model_path="model.pt")
+else:
+    batch_size = 32
+    learning_rate = 1e-3
+    num_samples = 200000
 
-dataset = ImageToImageDataset(image_pairs, num_samples, width=64)
-model = get_model(8, ('mateuszbuda/brain-segmentation-pytorch', 'unet'), 5)
-model.train()
+    dataset = ImageToImageDataset(image_pairs, num_samples, width=64)
+    model = get_model(8, ('mateuszbuda/brain-segmentation-pytorch', 'unet'), 5)
+    model.train()
 
-data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-loss_fn = nn.BCELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    loss_fn = nn.BCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-pbar = tqdm(data_loader)
-for X, Y in pbar:
-    pred = model(X)
-    loss = loss_fn(pred, Y)
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    loss = loss.item()
-    pbar.set_description(f"loss: {loss:>7f}")
+    pbar = tqdm(data_loader)
+    for X, Y in pbar:
+        pred = model(X)
+        loss = loss_fn(pred, Y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        loss = loss.item()
+        pbar.set_description(f"loss: {loss:>7f}")
 
-torch.save(model.state_dict(), "model.pt")
+    torch.save(model.state_dict(), "model.pt")
 
 for pair in pairs:
     samplerate, data = wavfile.read(os.path.join("data", pair[1]))
