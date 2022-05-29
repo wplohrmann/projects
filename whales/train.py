@@ -56,7 +56,7 @@ for pair in pairs:
 
 batch_size = 32
 learning_rate = 1e-3
-num_samples = 50000
+num_samples = 200000
 
 dataset = ImageToImageDataset(image_pairs, num_samples, width=64)
 model = get_model(8, ('mateuszbuda/brain-segmentation-pytorch', 'unet'), 5)
