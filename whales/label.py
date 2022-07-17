@@ -12,12 +12,8 @@ import sounddevice as sd
 from matplotlib.widgets import Button
 import csv
 
-def play(path):
-    samplerate, data = wavfile.read(path)
-    sd.play(data, samplerate)
-    sd.wait()
 
-
+classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
 
 def label(file, bbox, out, classes):
     samplerate, data = wavfile.read(file)
@@ -55,7 +51,6 @@ def label(file, bbox, out, classes):
 
 if __name__ == "__main__":
     out = "labels.csv"
-    classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
     with open("sound_events.pkl", "rb") as f:
         all_bboxes = pickle.load(f)
     for i in tqdm(range(len(all_bboxes))):

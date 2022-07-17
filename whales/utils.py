@@ -33,9 +33,17 @@ def get_spectrogram(nperseg, x, samplerate):
 
     return m, t, spectrogram
 
-def get_model(init_features, base_model, out_channels, model_path=None):
-    model = torch.hub.load(
-        *base_model, in_channels=1, out_channels=out_channels, init_features=init_features, pretrained=False
+def get_model(model_path=None):
+    model = torch.nn.Sequential(
+        torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=2),
+        torch.nn.ReLU(),
+        torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, stride=2),
+        torch.nn.ReLU(),
+        torch.nn.Flatten(),
+        torch.nn.Linear(in_features=16 * 1638, out_features=32),
+        torch.nn.ReLU(),
+        torch.nn.Linear(in_features=32, out_features=1),
+        torch.nn.Sigmoid(),
     )
 
     if model_path:

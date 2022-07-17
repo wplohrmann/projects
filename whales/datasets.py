@@ -1,11 +1,16 @@
+from functools import cache
 import os
 from dataclasses import dataclass
 from typing import List, Tuple, Union
+import pandas as pd
 
 import torch
 from scipy.ndimage import distance_transform_edt
 from torch.utils.data import Dataset
 import numpy as np
+
+from detect_events import read_and_get_spectrogram as _read_and_get_spectrogram
+from label import classes
 
 
 def random_crop(images: List[np.ndarray], width: int, seed: int = None):
@@ -28,31 +33,41 @@ def random_crop(images: List[np.ndarray], width: int, seed: int = None):
     return [image[..., min_row : min_row + width, min_col : min_col + width] for image in images]
 
 
+@cache
+def read_and_get_spectrogram(file):
+    m, t, spectrogram = _read_and_get_spectrogram(file)
+    if m is None:
+        return None, None, None
+    return m, t, spectrogram.astype(np.float32)
+
 @dataclass
-class ImageToImageDataset(Dataset):
-    images: List[Tuple[Union[np.ndarray, str], Union[str, np.ndarray]]]
+class ImageToTimeDataset(Dataset):
+    files: List[str]
+    labels: pd.DataFrame
     num_samples: int
     width: int
+
 
     def __getitem__(self, idx):
         if idx >= self.num_samples:
             raise StopIteration
         np.random.seed(idx)
 
-        n = np.random.randint(len(self.images))
-        maybe_X, maybe_Y = self.images[n]
-        if isinstance(maybe_X, str):
-            X = np.load(maybe_X)
-        else:
-            X = maybe_X
-        if isinstance(maybe_Y, str):
-            Y = np.load(maybe_Y)
-        else:
-            Y = maybe_Y
+        while True:
+            file = np.random.choice(self.files)
+            m, t, spectrogram = read_and_get_spectrogram(file)
+            if m is not None:
+                break
+        min_index = np.random.randint(spectrogram.shape[1] - self.width)
+        crop = spectrogram[:, min_index:min_index+self.width]
+        crop_t = t[min_index:min_index + self.width]
+        labels = np.zeros((len(classes), crop.shape[1]), dtype=np.float32)
+        relevant = self.labels[self.labels["file"] == file]
+        for _, row in relevant.iterrows():
+            labels[classes.index(row["class_name"]), np.logical_and(row["min_t"] < crop_t, crop_t < row["max_t"])] = 1
 
-        cropped_X, cropped_Y = random_crop([X[None], Y], self.width)
 
-        return (torch.Tensor(cropped_X), torch.Tensor(cropped_Y))
+        return (torch.Tensor(crop[None]), torch.Tensor(labels))
 
     def __len__(self):
         return self.num_samples
