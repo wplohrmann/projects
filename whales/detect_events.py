@@ -104,6 +104,5 @@ if __name__ == "__main__":
             # inspect(file)
             labels, regions = detect_sound_events(m, t, spectrogram)
             all_events.extend([get_bbox(region, m, t) + (file,) for region in regions])
-        break
     with open("sound_events.pkl", "wb") as f:
         pickle.dump(all_events, f)

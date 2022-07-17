@@ -5,6 +5,7 @@ from scipy.io import wavfile
 import numpy as np
 
 import matplotlib.patches as patches
+from tqdm import tqdm
 from detect_events import read_and_get_spectrogram
 from utils import get_spectrogram, plot_spectrogram
 import sounddevice as sd
@@ -53,11 +54,10 @@ def label(file, bbox, out, classes):
 
 if __name__ == "__main__":
     out = "labels.csv"
-    classes = ["Human", "Click", "Up-call", "Moan", "Groan", "Dolphin-whistle", "Breathing", "Noise"]
+    classes = ["Collision", "Click", "Up-call", "Moan (up)", "Groan (constant/down)", "Dolphin", "Breathing", "Noise"]
     with open("sound_events.pkl", "rb") as f:
         all_bboxes = pickle.load(f)
-    np.random.shuffle(all_bboxes)
-    for i in range(len(all_bboxes)):
+    for i in tqdm(range(len(all_bboxes))):
         *bbox, intensity, filename = all_bboxes[i]
         bbox = list(map(float, bbox))
         label(filename, bbox, out, classes)
