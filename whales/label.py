@@ -1,3 +1,4 @@
+import pickle
 import os
 from matplotlib import pyplot as plt
 from scipy.io import wavfile
@@ -14,11 +15,12 @@ def play(path):
     samplerate, data = wavfile.read(path)
     sd.play(data, samplerate)
     sd.wait()
-    
+
 
 
 def label(file, bbox, out, classes):
     samplerate, data = wavfile.read(file)
+    data_t = np.arange(len(data)) / samplerate
     m, t, spectrogram = get_spectrogram(1024, data, samplerate)
     mosaic = [["A"] * len(classes)]*3 + [[class_name for class_name in classes]]
     fig, axes = plt.subplot_mosaic(mosaic)
@@ -36,12 +38,14 @@ def label(file, bbox, out, classes):
             writer.writerow([file, *bbox, class_name])
         plt.close(fig)
 
+    buttons = {}
     for class_name in classes:
-        button = Button(axes[class_name], class_name)
-        button.on_clicked(lambda _: on_clicked(class_name))
-    min_index = np.argmin(np.abs(bbox[1] - 1 - t))
-    max_index = np.argmin(np.abs(bbox[3] + 1 - t))
-    to_play = np.concatenate([data[min_index:max_index],  np.zeros(samplerate // 2, dtype=np.int16)])
+        buttons[class_name] = Button(axes[class_name], class_name)
+        buttons[class_name].on_clicked(lambda _, arg=class_name: on_clicked(arg))
+    min_index = np.argmin(np.abs(bbox[1] - 1 - data_t))
+    max_index = np.argmin(np.abs(bbox[3] + 1 - data_t))
+    to_play = np.concatenate([data[min_index:max_index],  np.zeros(samplerate * 2, dtype=np.int16)])
+    print(len(to_play) / samplerate)
     sd.play(to_play, samplerate, loop=True)
     plt.show()
     sd.stop()
@@ -49,10 +53,11 @@ def label(file, bbox, out, classes):
 
 if __name__ == "__main__":
     out = "labels.csv"
-    classes = ["Human", "Click", "Up-call", "Moan", "Dolphin-whistle", "Breathing", "Noise"]
-    all_bboxes = np.load("sound_events.npy", allow_pickle=True)
-    all_bboxes = sorted(all_bboxes, key=lambda x: float(x[4]) - float(x[2]))
-    for i in range(5):
+    classes = ["Human", "Click", "Up-call", "Moan", "Groan", "Dolphin-whistle", "Breathing", "Noise"]
+    with open("sound_events.pkl", "rb") as f:
+        all_bboxes = pickle.load(f)
+    np.random.shuffle(all_bboxes)
+    for i in range(len(all_bboxes)):
         *bbox, intensity, filename = all_bboxes[i]
         bbox = list(map(float, bbox))
         label(filename, bbox, out, classes)

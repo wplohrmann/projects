@@ -1,4 +1,5 @@
 import os
+import pickle
 from matplotlib.transforms import Bbox
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,15 +47,16 @@ def detect_sound_events(m, t, spectrogram):
     intervals = []
     for region in regions:
         duration = (region.bbox[3] - region.bbox[1]) * dt
-        if duration < 0.05:
+        if duration < 0.2:
             labels[region.slice][region.image] = 0
             click_labels[region.slice][region.image] = region.label
         else:
             intervals.append([region.bbox[1] * dt, region.bbox[3] * dt, region.label])
     intervals = np.array(intervals)
-    label_groups = merge_intervals(intervals, max_gap=0.05)
-    for label_group in label_groups:
-        labels[np.isin(labels, label_group)] = label_group[0]
+    if len(intervals) > 0:
+        label_groups = merge_intervals(intervals, max_gap=0.05)
+        for label_group in label_groups:
+            labels[np.isin(labels, label_group)] = label_group[0]
 
     return labels, regionprops(labels, spectrogram)
 
@@ -99,6 +101,9 @@ if __name__ == "__main__":
             m, t, spectrogram = read_and_get_spectrogram(file)
             if m is None:
                 continue
+            # inspect(file)
             labels, regions = detect_sound_events(m, t, spectrogram)
             all_events.extend([get_bbox(region, m, t) + (file,) for region in regions])
-    np.save("sound_events.npy", all_events)
+        break
+    with open("sound_events.pkl", "wb") as f:
+        pickle.dump(all_events, f)
