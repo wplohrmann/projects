@@ -28,6 +28,7 @@ def label(file, bbox, out, classes):
     axes["A"].pcolormesh(t, m, spectrogram)
     rect = patches.Rectangle((bbox[1], bbox[0]), bbox[3] - bbox[1], bbox[2] - bbox[0], linewidth=1, edgecolor='r', facecolor='none')
     axes["A"].add_patch(rect)
+    axes["A"].set_title(file)
 
     def on_clicked(class_name):
         print(class_name)
@@ -54,7 +55,7 @@ def label(file, bbox, out, classes):
 
 if __name__ == "__main__":
     out = "labels.csv"
-    classes = ["Collision", "Click", "Up-call", "Moan (up)", "Groan (constant/down)", "Dolphin", "Breathing", "Noise"]
+    classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
     with open("sound_events.pkl", "rb") as f:
         all_bboxes = pickle.load(f)
     for i in tqdm(range(len(all_bboxes))):
