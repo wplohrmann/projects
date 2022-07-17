@@ -5,3 +5,5 @@ scipy
 tqdm
 scikit-image
 wavfile
+sounddevice
+streamlit
