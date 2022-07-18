@@ -3,6 +3,8 @@ import numpy as np
 from scipy.signal import spectrogram as _spectrogram
 import torch
 
+classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
+
 def to_mel(f):
     return 2595 * np.log10(1 + f / 700)
 
@@ -33,28 +35,16 @@ def get_spectrogram(nperseg, x, samplerate):
 
     return m, t, spectrogram
 
-def get_model(model_path=None):
-    model = torch.nn.Sequential(
-        torch.nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=2),
-        torch.nn.ReLU(),
-        torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, stride=2),
-        torch.nn.ReLU(),
-        torch.nn.Flatten(),
-        torch.nn.Linear(in_features=16 * 1638, out_features=32),
-        torch.nn.ReLU(),
-        torch.nn.Linear(in_features=32, out_features=1),
-        torch.nn.Sigmoid(),
-    )
+class Model(torch.nn.Module):
+    def __init__(self, model_path=None):
+        super().__init__()
+        self.im_to_im = torch.hub.load("mateuszbuda/brain-segmentation-pytorch", "unet", in_channels=1, out_channels=len(classes), init_features=8, pretrained=False)
+        if model_path:
+            self.im_to_im.load_state_dict(torch.load(model_path))
 
-    if model_path:
-        model.load_state_dict(torch.load(model_path))
+    def forward(self, x):
+        x = self.im_to_im(x[:, :, :-1, :])
+        x = torch.mean(x, axis=2)
+        x = torch.sigmoid(x)
 
-    return model
-
-classes = {
-    "Up call": "#000000",
-    "Bubble": "#0000FF",
-    "Click": "#FF0000",
-    "Exhale": "#00FF00",
-    "Humpback song": "#FFFF00",
-}
+        return x

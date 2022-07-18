@@ -7,13 +7,12 @@ import numpy as np
 import matplotlib.patches as patches
 from tqdm import tqdm
 from detect_events import read_and_get_spectrogram
-from utils import get_spectrogram, plot_spectrogram
+from utils import get_spectrogram, classes
 import sounddevice as sd
 from matplotlib.widgets import Button
 import csv
 
 
-classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
 
 def label(file, bbox, out, classes):
     samplerate, data = wavfile.read(file)

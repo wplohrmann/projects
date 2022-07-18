@@ -11,7 +11,7 @@ from torch import nn
 from tqdm import tqdm
 
 
-from utils import get_model
+from utils import Model
 from datasets import ImageToTimeDataset
 from label import classes
 
@@ -39,14 +39,14 @@ else:
 labels = pd.read_csv("labels.csv")
 
 if args.skip_training:
-    model = get_model(model_path="model.pt")
+    model = Model(model_path="model.pt")
 else:
     batch_size = 32
     learning_rate = 1e-3
     num_samples = 200000
 
     dataset = ImageToTimeDataset(files, labels, num_samples, width=64)
-    model = get_model()
+    model = Model()
     model.train()
 
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
