@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram as _spectrogram
+from torchvision.models import resnet18, ResNet
 import torch
 
 classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
@@ -35,16 +36,12 @@ def get_spectrogram(nperseg, x, samplerate):
 
     return m, t, spectrogram
 
-class Model(torch.nn.Module):
-    def __init__(self, model_path=None):
-        super().__init__()
-        self.im_to_im = torch.hub.load("mateuszbuda/brain-segmentation-pytorch", "unet", in_channels=1, out_channels=len(classes), init_features=8, pretrained=False)
-        if model_path:
-            self.im_to_im.load_state_dict(torch.load(model_path))
 
-    def forward(self, x):
-        x = self.im_to_im(x[:, :, :-1, :])
-        x = torch.mean(x, axis=2)
-        x = torch.sigmoid(x)
+def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
+    model = resnet18(num_classes=num_classes)
+    model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
-        return x
+    if model_path is not None:
+        model.load_state_dict(torch.load(model_path))
+
+    return model

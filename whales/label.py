@@ -29,7 +29,7 @@ def label(file, bbox, out, classes):
         print(class_name)
         if not os.path.exists(out):
             with open(out, "w") as f:
-                f.write("file,min_t,min_m,max_t,max_m,class_name\n")
+                f.write("file,min_m,min_t,max_m,max_t,class_name\n")
         with open(out, "a") as f:
             writer = csv.writer(f)
             writer.writerow([file, *bbox, class_name])
@@ -52,6 +52,7 @@ if __name__ == "__main__":
     out = "labels.csv"
     with open("sound_events.pkl", "rb") as f:
         all_bboxes = pickle.load(f)
+    assert False
     for i in tqdm(range(len(all_bboxes))):
         *bbox, intensity, filename = all_bboxes[i]
         bbox = list(map(float, bbox))
