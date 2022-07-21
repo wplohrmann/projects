@@ -13,7 +13,7 @@ num_classes = len(classes)
 model = get_resnet18(num_classes, model_path="model.pt")
 model.eval()
 
-dataset = WhaleDataset(labels, 1, width=64)
+dataset = WhaleDataset(labels, 1, width=64, train=False)
 confusion_matrix = ConfusionMatrix(num_classes)
 for image, class_name in zip(dataset.images, dataset.class_labels):
     with torch.no_grad():

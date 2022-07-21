@@ -46,12 +46,22 @@ class WhaleDataset(Dataset):
     labels: pd.DataFrame
     num_samples: int
     width: int
+    train: bool
     images: List[np.ndarray] = field(default_factory=list)
     class_labels: List[np.ndarray] = field(default_factory=list)
 
     def __post_init__(self):
         failed = 0
-        for _, row in tqdm(self.labels.iterrows()):
+        np.random.seed(0)
+        print("Before split", self.labels.groupby("class_name").count()["file"])
+        split_index = int(0.8 * len(self.labels))
+        if self.train:
+            self.labels = self.labels.sample(frac=1).iloc[:split_index]
+        else:
+            self.labels = self.labels.sample(frac=1).iloc[split_index:]
+
+        print("After split", self.labels.groupby("class_name").count()["file"])
+        for _, row in tqdm(self.labels.iloc[:].iterrows(), total=len(self.labels)):
             m, t, spectrogram = read_and_get_spectrogram(row["file"])
             avg_t = (row["min_t"] + row["max_t"]) / 2
             avg_t_index = np.argmin(np.abs(avg_t - t))
