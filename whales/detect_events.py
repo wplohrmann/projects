@@ -70,7 +70,8 @@ def read_and_get_spectrogram(fp):
 
 def inspect(fp):
     m, t, spectrogram = read_and_get_spectrogram(fp)
-    plot_spectrogram(m, t, spectrogram)
+    plot_spectrogram(m, t, spectrogram, log=False)
+    plt.title(fp)
     plt.show()
 
     labels, regions = detect_sound_events(m, t, spectrogram)
