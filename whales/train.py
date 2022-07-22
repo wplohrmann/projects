@@ -43,7 +43,7 @@ if args.skip_training:
 else:
     batch_size = 32
     learning_rate = 1e-3
-    num_samples = 200000
+    num_samples = 15000
 
     dataset = WhaleDataset(labels, num_samples, width=64, train=True)
     model = get_resnet18(len(classes))
@@ -56,6 +56,11 @@ else:
     pbar = tqdm(data_loader)
     try:
         for X, Y in pbar:
+            if False:
+                plt.imshow(X[0, 0])
+                plt.title(classes[np.argmax(Y[0])])
+                plt.show()
+                continue
             pred = torch.sigmoid(model(X))
             loss = loss_fn(pred, Y)
             optimizer.zero_grad()

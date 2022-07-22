@@ -79,11 +79,14 @@ class WhaleDataset(Dataset):
         np.random.seed(idx)
 
         i = np.random.randint(len(self.images))
+        rescale = np.random.uniform(low=0.1, high=1.5)
+        image = torch.Tensor(self.images[i][None])
+        image = torch.tanh(image / image.max() * rescale) * 2
         labels = np.zeros(len(classes), dtype=np.float32)
         labels[classes.index(self.class_labels[i])] += 1
 
 
-        return (torch.Tensor(self.images[i][None]), torch.Tensor(labels))
+        return (torch.Tensor(image), torch.Tensor(labels))
 
     def __len__(self):
         return self.num_samples
