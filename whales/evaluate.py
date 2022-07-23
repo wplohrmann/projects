@@ -21,7 +21,7 @@ for train in [True, False]:
         print("Evaluation on val-dataset")
     dataset = WhaleDataset(labels, 1, train=train, nperseg_mean=2048, nperseg_std=None)
     confusion_matrix = ConfusionMatrix(num_classes)
-    for clip, class_name in tqdm(zip(dataset.clips, dataset.class_labels)):
+    for clip, class_name in tqdm(zip(dataset.clips, dataset.class_labels), total=len(dataset.clips)):
         image = get_random_spectrogram(clip, dataset.samplerate, nperseg_mean=2048, nperseg_std=0, shape=dataset.shape, add_noise=False)
         with torch.no_grad():
             pred = model(torch.tensor(image[None, None] / image.max()))
