@@ -20,22 +20,6 @@ parser.add_argument("--skip-training", action="store_true")
 args = parser.parse_args()
 
 
-files = []
-for dir_name in tqdm(os.listdir("data")):
-    if not dir_name.endswith("converted"):
-        continue
-    dir = os.path.join("data", dir_name)
-    for filename in tqdm(os.listdir(dir)):
-        files.append(os.path.join(dir, filename))
-
-# nperseg = 3000 # Try training on multiple different settings
-np.random.seed(0)
-image_pairs = []
-if args.skip_training:
-    n_spectrograms = 0
-else:
-    n_spectrograms = 20
-
 labels = pd.read_csv("labels.csv")
 
 if args.skip_training:

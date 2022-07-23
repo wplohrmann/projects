@@ -1,21 +1,16 @@
 from collections import Counter
-from functools import cache
-import os
 from dataclasses import dataclass, field
-from typing import List, Tuple, Union
+from typing import List
 import pandas as pd
 
 import torch
-from scipy.ndimage import distance_transform_edt
 from scipy.io import wavfile
 from torch.utils.data import Dataset
 import numpy as np
 from tqdm import tqdm
 from skimage.transform import resize
 
-from detect_events import read_and_get_spectrogram as _read_and_get_spectrogram
-from label import classes
-from utils import get_spectrogram
+from utils import get_spectrogram, classes
 
 
 def random_crop(images: List[np.ndarray], width: int, seed: int = None):
