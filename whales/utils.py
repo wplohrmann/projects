@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram as _spectrogram
-from torchvision.models import resnet18, ResNet
+from torchvision.models import resnet18, ResNet, shufflenet_v2_x0_5
 from pthflops import count_ops
 import torch
 
@@ -41,8 +41,18 @@ def get_spectrogram(nperseg, x, samplerate):
 # TODO: Other models:
 # ShuffleNet, SqueezeNet, RegNet, MobileNet, MNASNet, EfficientNet
 def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
-    model = resnet18(num_classes=num_classes)
-    model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    if False:
+        model = resnet18(num_classes=num_classes)
+        model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    else:
+        model = shufflenet_v2_x0_5(num_classes=num_classes)
+        input_channels = 1
+        output_channels = model._stage_out_channels[0]
+        model.conv1 = torch.nn.Sequential(
+            torch.nn.Conv2d(input_channels, output_channels, 3, 2, 1, bias=False),
+            torch.nn.BatchNorm2d(output_channels),
+            torch.nn.ReLU(inplace=True),
+        )
 
     if model_path is not None:
         model.load_state_dict(torch.load(model_path))

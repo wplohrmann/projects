@@ -119,3 +119,25 @@ class WhaleDataset(Dataset):
     def __len__(self):
         return self.num_samples
 
+
+class Repeater(Dataset):
+    def __init__(self, inner: Dataset, num_repeats: int, cache_size: int):
+        self.inner = inner
+        self.cache = {}
+        self.access_count = {}
+        self.num_repeats = num_repeats
+        self.cache_size = cache_size
+    def __len__(self):
+        return len(self.inner)
+    def __getitem__(self, idx):
+        np.random.seed(idx)
+        cache_idx = np.random.randint(self.cache_size)
+        if cache_idx in self.cache and self.access_count[cache_idx] < self.num_repeats:
+            self.access_count[cache_idx] += 1
+            return self.cache[cache_idx]
+        else:
+            inner_idx = np.random.randint(len(self.inner))
+            value = self.inner[inner_idx]
+            self.cache[cache_idx] = value
+            self.access_count[cache_idx] = 1
+            return value

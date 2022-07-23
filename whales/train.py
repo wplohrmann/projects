@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 
 from utils import get_resnet18
-from datasets import WhaleDataset
+from datasets import Repeater, WhaleDataset
 from label import classes
 
 parser = argparse.ArgumentParser(description="Train or evaluate a model on marine mammal detection")
@@ -43,13 +43,16 @@ if args.skip_training:
 else:
     batch_size = 32
     learning_rate = 1e-3
-    num_samples = 15000
+    num_samples = 50000
+    num_repeats = 20
+    cache_size = 200
 
     dataset = WhaleDataset(labels, num_samples, train=True, nperseg_mean=2048, nperseg_std=500)
     model = get_resnet18(len(classes))
     model.train()
 
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    repeater = Repeater(dataset, num_repeats, cache_size)
+    data_loader = DataLoader(repeater, batch_size=batch_size, shuffle=True)
     loss_fn = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
