@@ -37,14 +37,15 @@ def tanh(x):
     neg = np.exp(-x)
     return (pos - neg) / (pos + neg)
 
-def get_random_spectrogram(clip, samplerate, nperseg_mean, nperseg_std, shape):
+def get_random_spectrogram(clip, samplerate, nperseg_mean, nperseg_std, shape, add_noise=True):
     nperseg = int(np.random.normal(nperseg_mean, nperseg_std))
     _, _, image = get_spectrogram(nperseg, clip, samplerate)
     image = image.astype(np.float32)
     image = resize(image, shape)
-    rescale = np.random.uniform(low=0.1, high=1.5)
-    image = image + np.random.uniform(size=shape).astype(np.float32) * 0.7
-    image = tanh((image / image.max()) * rescale) * 2
+    if add_noise:
+        rescale = np.random.uniform(low=0.1, high=1.5)
+        image = image + np.random.uniform(size=shape).astype(np.float32) * 0.7
+        image = tanh((image / image.max()) * rescale) * 2
 
     return image
 
