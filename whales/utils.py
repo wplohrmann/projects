@@ -55,7 +55,7 @@ def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
         )
 
     if model_path is not None:
-        model.load_state_dict(torch.load(model_path))
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 
     return model
 
