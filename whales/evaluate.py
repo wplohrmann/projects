@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import torch
 from torchmetrics import ConfusionMatrix
-from datasets import WhaleDataset
+from tqdm import tqdm
+from datasets import WhaleDataset, get_random_spectrogram
 
 from utils import get_resnet18, classes
 
@@ -18,9 +19,10 @@ for train in [True, False]:
         print("Evaluation on train-dataset")
     else:
         print("Evaluation on val-dataset")
-    dataset = WhaleDataset(labels, 1, width=64, train=train)
+    dataset = WhaleDataset(labels, 1, train=train, nperseg_mean=None, nperseg_std=None)
     confusion_matrix = ConfusionMatrix(num_classes)
-    for image, class_name in zip(dataset.images, dataset.class_labels):
+    for clip, class_name in tqdm(zip(dataset.clips, dataset.class_labels)):
+        image = get_random_spectrogram(clip, dataset.samplerate, nperseg_mean=2048, nperseg_std=0, shape=dataset.shape)
         with torch.no_grad():
             pred = model(torch.tensor(image[None, None] / image.max()))
         class_pred = torch.argmax(pred, dim=1)

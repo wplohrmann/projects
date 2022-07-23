@@ -47,7 +47,7 @@ def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
 
     return model
 
-def summarise_model(model: torch.Module, input_shape):
+def summarise_model(model: torch.nn.Module, input_shape):
     num_params = sum(x.size for x in model.parameters())
     random_input = torch.rand(input_shape).type(torch.float32)
     # https://github.com/1adrianb/pytorch-estimate-flops
