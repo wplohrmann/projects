@@ -1,3 +1,4 @@
+from collections import Counter
 from functools import cache
 import os
 from dataclasses import dataclass, field
@@ -89,14 +90,16 @@ class WhaleDataset(Dataset):
         self.samplerate = samplerate
         _, _, test_image = get_spectrogram(self.nperseg_mean, self.clips[0], samplerate)
         self.shape = test_image.shape
+        self.class_counts = dict(Counter(self.class_labels))
+        self.p = np.array([len(self.clips) / self.class_counts[class_name] for class_name in self.class_labels])
+        self.p /= self.p.sum()
 
     def __getitem__(self, idx):
         if idx >= self.num_samples:
             raise StopIteration
         np.random.seed(idx)
 
-        i = np.random.randint(len(self.clips))
-        # TODO: Pick clips uniformly among classes
+        i = np.random.choice(len(self.clips), p=self.p)
         clip = self.clips[i]
 
         nperseg_std = self.nperseg_std if self.train else 0

@@ -38,6 +38,8 @@ def get_spectrogram(nperseg, x, samplerate):
     return m, t, spectrogram
 
 
+# TODO: Other models:
+# ShuffleNet, SqueezeNet, RegNet, MobileNet, MNASNet, EfficientNet
 def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
     model = resnet18(num_classes=num_classes)
     model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
