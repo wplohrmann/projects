@@ -45,7 +45,7 @@ else:
     learning_rate = 1e-3
     num_samples = 15000
 
-    dataset = WhaleDataset(labels, num_samples, width=64, train=True)
+    dataset = WhaleDataset(labels, num_samples, train=True, nperseg_mean=2048, nperseg_std=500)
     model = get_resnet18(len(classes))
     model.train()
 

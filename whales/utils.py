@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram as _spectrogram
 from torchvision.models import resnet18, ResNet
+from pthflops import count_ops
 import torch
 
 classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
@@ -45,3 +46,13 @@ def get_resnet18(num_classes: int, model_path: str = None) -> ResNet:
         model.load_state_dict(torch.load(model_path))
 
     return model
+
+def summarise_model(model: torch.Module, input_shape):
+    num_params = sum(x.size for x in model.parameters())
+    random_input = torch.rand(input_shape).type(torch.float32)
+    # https://github.com/1adrianb/pytorch-estimate-flops
+    flops, _ = count_ops(model, random_input, print_readable=False)
+    return {
+        "Number of parameters": num_params,
+        "FLOPs": flops,
+    }

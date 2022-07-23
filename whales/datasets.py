@@ -6,12 +6,15 @@ import pandas as pd
 
 import torch
 from scipy.ndimage import distance_transform_edt
+from scipy.io import wavfile
 from torch.utils.data import Dataset
 import numpy as np
 from tqdm import tqdm
+from skimage.transform import resize
 
 from detect_events import read_and_get_spectrogram as _read_and_get_spectrogram
 from label import classes
+from utils import get_spectrogram
 
 
 def random_crop(images: List[np.ndarray], width: int, seed: int = None):
@@ -33,21 +36,30 @@ def random_crop(images: List[np.ndarray], width: int, seed: int = None):
 
     return [image[..., min_row : min_row + width, min_col : min_col + width] for image in images]
 
+def tanh(x):
+    pos = np.exp(x)
+    neg = np.exp(-x)
+    return (pos - neg) / (pos + neg)
 
-@cache
-def read_and_get_spectrogram(file):
-    m, t, spectrogram = _read_and_get_spectrogram(file)
-    if m is None:
-        return None, None, None
-    return m, t, spectrogram.astype(np.float32)
+def get_random_spectrogram(clip, samplerate, nperseg_mean, nperseg_std, shape):
+    nperseg = int(np.random.normal(nperseg_mean, nperseg_std))
+    _, _, image = get_spectrogram(nperseg, clip, samplerate)
+    image = image.astype(np.float32)
+    image = resize(image, shape)
+    rescale = np.random.uniform(low=0.1, high=1.5)
+    image = image + np.random.uniform(size=shape).astype(np.float32) * 0.7
+    image = tanh((image / image.max()) * rescale) * 2
+
+    return image
 
 @dataclass
 class WhaleDataset(Dataset):
     labels: pd.DataFrame
     num_samples: int
-    width: int
+    nperseg_mean: int
+    nperseg_std: int
     train: bool
-    images: List[np.ndarray] = field(default_factory=list)
+    clips: List[np.ndarray] = field(default_factory=list)
     class_labels: List[np.ndarray] = field(default_factory=list)
 
     def __post_init__(self):
@@ -62,32 +74,44 @@ class WhaleDataset(Dataset):
 
         print("After split", self.labels.groupby("class_name").count()["file"])
         for _, row in tqdm(self.labels.iloc[:].iterrows(), total=len(self.labels)):
-            m, t, spectrogram = read_and_get_spectrogram(row["file"])
+            samplerate, data = wavfile.read(row["file"])
+            t = np.arange(len(data)) / samplerate
             avg_t = (row["min_t"] + row["max_t"]) / 2
-            avg_t_index = np.argmin(np.abs(avg_t - t))
-            min_index = int(avg_t_index - self.width  // 2)
-            max_index = int(avg_t_index + self.width // 2)
-            if min_index < 0 or max_index > len(t):
+            # 2 seconds per clip
+            min_index = np.argmin(np.abs(avg_t - 1 - t))
+            max_index = np.argmin(np.abs(avg_t + 1 - t))
+            if (max_index - min_index) / samplerate < 2:
+                failed += 1
                 continue
-            self.images.append(spectrogram[:, min_index:max_index])
+            self.clips.append(data[min_index:max_index])
             self.class_labels.append(row["class_name"])
         print(failed, "events were not included")
+        self.samplerate = samplerate
+        _, _, test_image = get_spectrogram(self.nperseg_mean, self.clips[0], samplerate)
+        self.shape = test_image.shape
 
     def __getitem__(self, idx):
         if idx >= self.num_samples:
             raise StopIteration
         np.random.seed(idx)
 
-        i = np.random.randint(len(self.images))
-        rescale = np.random.uniform(low=0.1, high=1.5)
-        image = self.images[i] + np.random.uniform(size=self.images[i].shape).astype(np.float32) * 0.7
-        image = torch.Tensor(image[None])
-        image = torch.tanh(image / image.max() * rescale) * 2
+        i = np.random.randint(len(self.clips))
+        # TODO: Pick clips uniformly among classes
+        clip = self.clips[i]
+
+        nperseg_std = self.nperseg_std if self.train else 0
+        image = get_random_spectrogram(
+            clip,
+            self.samplerate,
+            nperseg_mean=self.nperseg_mean,
+            nperseg_std=nperseg_std,
+            shape=self.shape
+        )
         labels = np.zeros(len(classes), dtype=np.float32)
         labels[classes.index(self.class_labels[i])] += 1
 
 
-        return (torch.Tensor(image), torch.Tensor(labels))
+        return (torch.Tensor(image[None]), torch.Tensor(labels))
 
     def __len__(self):
         return self.num_samples
