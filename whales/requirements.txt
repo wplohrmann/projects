@@ -7,3 +7,5 @@ scikit-image
 wavfile
 sounddevice
 streamlit
+scikit-learn
+pthflops
