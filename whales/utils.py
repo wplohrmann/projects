@@ -1,8 +1,10 @@
+from typing import List
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.signal import spectrogram as _spectrogram
 from torchvision.models import resnet18, ResNet, shufflenet_v2_x0_5
 from pthflops import count_ops
+from torchmetrics import ConfusionMatrix as _ConfusionMatrix
 import torch
 
 classes = ["Whale (other)", "Dolphin", "Up call", "Breathing"]
@@ -68,3 +70,35 @@ def summarise_model(model: torch.nn.Module, input_shape):
         "Number of parameters": num_params,
         "FLOPs": flops,
     }
+
+class ConfusionMatrix(_ConfusionMatrix):
+    def __init__(self, classes: List[str], *args, **kwargs):
+        self.classes = classes
+        super().__init__(len(classes), *args, **kwargs)
+
+    def accuracy(self):
+        matrix = self.compute()
+
+        return (torch.trace(matrix) / torch.sum(matrix)).item()
+
+    def plot(self):
+        matrix = self.compute()
+        fig, ax = plt.subplots(1, 1)
+        ax.imshow(matrix)
+        ax.set_xticks(np.arange(self.num_classes))
+        ax.set_yticks(np.arange(self.num_classes))
+        ax.set_xticklabels(self.classes)
+        ax.set_yticklabels(self.classes)
+        ax.set_ylabel("Ground truth")
+        ax.set_xlabel("Prediction")
+        ax.set_title("Confusion matrix")
+        for (i, j), z in np.ndenumerate(matrix.numpy()):
+            ax.text(j, i, str(z), ha="center", va="center")
+        plt.show()
+
+        accuracy = (torch.trace(matrix) / torch.sum(matrix)).item()
+        print(f"Total accuracy: {accuracy*100:.2f}%")
+        for i, class_name in enumerate(self.classes):
+            class_accuracy = matrix[i, i] / torch.sum(matrix[i])
+            print(f"Recall '{class_name}': {class_accuracy*100:.2f}%")
+

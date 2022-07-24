@@ -3,9 +3,12 @@
 # https://github.com/wvangansbeke/Unsupervised-Classification/blob/master/losses/losses.py
 """
 
+from collections import Counter
+from itertools import permutations
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import torch
 from torch.nn import functional as F
 from tqdm import tqdm
@@ -13,7 +16,7 @@ from barlow_twins import BarlowModel
 from datasets import WhaleDataset, get_random_spectrogram
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
-from utils import classes, get_resnet18
+from utils import ConfusionMatrix, classes, get_resnet18
 
 EPS=1e-8
 
@@ -92,8 +95,8 @@ if __name__ == "__main__":
     tree = KDTree(X_in)
     neighbour_indices = tree.query(X_in, k=2, return_distance=False)
 
-    num_classes = 5
-    entropy_weight = 2
+    num_classes = len(classes)
+    entropy_weight = 0.5
     learning_rate = 1e-3
 
     loss_fn = SCANLoss(entropy_weight=entropy_weight)
@@ -140,10 +143,29 @@ if __name__ == "__main__":
     plt.subplot(211)
     for i, group in enumerate(groups):
       plt.scatter(group[:, 0], group[:, 1], label=sorted(classes)[i])
-      pass
     plt.legend()
     plt.subplot(212)
     plt.scatter(transformed[:, 0], transformed[:, 1], c=np.argmax(final_pred, axis=1))
-
-    plt.gcf().set_size_inches((20, 20))
     plt.show()
+
+    encoder = OneHotEncoder()
+    encoded = encoder.fit_transform(class_labels.reshape((-1, 1)))
+
+    accuracies = {}
+    for perm in permutations(range(num_classes)):
+        classes_permuted = [classes[i] for i in perm]
+        GT = torch.tensor([classes_permuted.index(x) for x in class_labels])
+        PRED = torch.argmax(torch.tensor(final_pred), axis=1)
+        confusion_matrix = ConfusionMatrix(classes_permuted)
+        confusion_matrix.update(PRED, GT)
+        accuracies[tuple(perm)] = confusion_matrix.accuracy()
+
+    best_perm = max(accuracies, key=accuracies.get)
+    classes_permuted = [classes[i] for i in best_perm]
+    GT = torch.tensor([classes_permuted.index(x) for x in class_labels])
+    PRED = torch.argmax(torch.tensor(final_pred), axis=1)
+    c_GT = {classes_permuted[k]: v for k, v in Counter(GT.numpy()).items()}
+    c_PRED = {classes_permuted[k]: v for k, v in Counter(PRED.numpy()).items()}
+    confusion_matrix = ConfusionMatrix(classes_permuted)
+    confusion_matrix.update(PRED, GT)
+    confusion_matrix.plot()
