@@ -77,9 +77,12 @@ def inspect(fp):
     labels, regions = detect_sound_events(m, t, spectrogram)
     gray = np.stack([spectrogram / spectrogram.max() for _ in range(3)], axis=-1)
     colour = label2rgb(labels, gray, alpha=0.2)
-    _, axes=  plt.subplots(2, 1, sharex=True, sharey=True)
-    axes[0].imshow(spectrogram[::-1])
+    _, axes=  plt.subplots(2, 1)
+    axes[0].pcolormesh(t, m, spectrogram)
+    axes[0].set_xlabel("Time / s")
+    axes[0].set_ylabel("Frequency / mel")
     axes[1].imshow(colour[::-1])
+    axes[1].axis("off")
     plt.show()
 
 
@@ -88,10 +91,11 @@ def get_bbox(region, m, t):
     return (m[bbox[0]], t[bbox[1]], m[bbox[2]-1], t[bbox[3]-1], region.mean_intensity)
 
 if __name__ == "__main__":
-    debug = False
+    debug = True
     if debug:
         path = "data/station5_converted/EOS_220405_133808.wav"
         inspect(path)
+        assert False
     all_events = []
     for dir_name in tqdm(os.listdir("data")):
         if not dir_name.endswith("converted"):
