@@ -1,0 +1,4 @@
+outs:
+- md5: 4467837859e5adfdf98a460b9a6ed74f
+  size: 4995
+  path: categories.json
