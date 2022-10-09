@@ -21,6 +21,7 @@ categories = get_categories()
 # st.write(categories)
 
 
+@st.experimental_memo
 def get_transactions():
     with open("data/data.csv") as f:
         contents = f.readlines()
@@ -78,7 +79,10 @@ with tabs[0]:
 with tabs[1]:
     with open("data/budget.json") as f:
         budget = json.load(f)
-    today = datetime.now()
+    if st.checkbox("Add a random grand per month to income"):
+        budget["Income"] += 1000
+    past_months = st.number_input("Choose month in the past", min_value=0, step=1)
+    today = datetime.now() - relativedelta(months=past_months)
     st.header(f"This month: {today.strftime('%B')}")
     last_month = today - relativedelta(months=1)
     subscriptions_last_month = parsed[
@@ -97,6 +101,15 @@ with tabs[1]:
         | (transactions_this_month["Category"] == "Rent")
         | (transactions_this_month["Category"] == "Subscriptions")
     )
+    if st.checkbox("Remove (travel over £20, hotel) expenses"):
+        excluded_transactions = (
+            excluded_transactions
+            | (
+                (transactions_this_month["Category"] == "Travel")
+                & (transactions_this_month["Amount"] < -20)
+            )
+            | (transactions_this_month["Category"] == "Hotel")
+        )
     st.subheader("Excluded transactions this month")
     st.write(transactions_this_month[excluded_transactions].astype(str))
     st.subheader("Included transactions this month")
@@ -114,21 +127,41 @@ with tabs[1]:
     st.caption(
         f"Disbosable income after rent: {disposable_income}. Daily allowance: £{daily_allowance:.0f}"
     )
-    fig, ax = plt.subplots()
-    fig.autofmt_xdate(rotation=45)
-    ax.plot(
-        included_transactions["Date"],
-        np.cumsum(-included_transactions["Amount"]),
-        label="Expenses",
-    )
 
     ratio_of_month_passed = included_transactions["Date"].apply(
         lambda day: (day - first_of_month).days / (last_of_month - first_of_month).days
     )
+    expenses = np.cumsum(
+        -included_transactions["Amount"]
+    ) + ratio_of_month_passed * np.sum(-subscriptions_last_month["Amount"])
+    pro_rated_income = disposable_income * ratio_of_month_passed
+
+    fig, ax = plt.subplots()
+    fig.autofmt_xdate(rotation=45)
     ax.plot(
         included_transactions["Date"],
-        disposable_income * ratio_of_month_passed,
+        expenses,
+        label="Expenses",
+    )
+    ax.plot(
+        included_transactions["Date"],
+        pro_rated_income,
         label="Budget",
     )
     ax.legend()
     st.write(fig)
+    expenses_so_far = expenses.iloc[-1]
+    income_so_far = pro_rated_income.iloc[-1]
+    st.subheader(f"Net so far this month: {income_so_far - expenses_so_far:.0f} GBP")
+
+    st.subheader("Breakdown of all expenses (excluding subscriptions and rent)")
+    category_expenses = []
+    for category, rows in included_transactions.groupby("Category"):
+        category_expenses.append(
+            {
+                "Category": category,
+                "Amount": -rows["Amount"].sum(),
+            }
+        )
+    df = pd.DataFrame(category_expenses).set_index("Category")
+    st.bar_chart(df)
