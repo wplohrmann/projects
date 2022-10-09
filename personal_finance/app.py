@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+from dateutil.relativedelta import relativedelta
 import json
 import numpy as np
 import streamlit as st
@@ -7,43 +10,55 @@ st.title("Personal finances")
 
 category_path = "data/categories.json"
 
+
 @st.experimental_singleton
 def get_categories():
     with open(category_path) as f:
         return json.load(f)
 
+
 categories = get_categories()
 # st.write(categories)
+
 
 def get_transactions():
     with open("data/data.csv") as f:
         contents = f.readlines()
     header = contents.pop(0).split(",")
-    df = pd.DataFrame([
-        {column: value for column, value in zip(header, row.split(",", maxsplit=len(header)))}
-        for row in contents
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                column: value
+                for column, value in zip(header, row.split(",", maxsplit=len(header)))
+            }
+            for row in contents
+        ]
+    )
     return df
+
 
 def parse_transactions(df: pd.DataFrame):
     new_rows = []
     for _, row in df.iterrows():
-        new_rows.append({
-            "Date": pd.to_datetime(row["Date"], dayfirst=True),
-            "Amount": float(row["Amount"]),
-            "Memo": row["Memo\n"],
-            "Category": categories.get(row["Memo\n"].split("\t")[0], "Other"),
-        })
-    new_df = pd.DataFrame(new_rows)
+        new_rows.append(
+            {
+                "Date": pd.to_datetime(row["Date"], dayfirst=True),
+                "Amount": float(row["Amount"]),
+                "Memo": row["Memo\n"],
+                "Category": categories.get(row["Memo\n"].split("\t")[0], "Other"),
+            }
+        )
+    new_df = pd.DataFrame(new_rows).sort_values("Date", ascending=True)
     return new_df
 
 
 transactions = get_transactions()
 parsed = parse_transactions(transactions)
 
-st.write(parsed.astype(str))
+tabs = st.tabs(["Categorise transactions", "Track spending this month"])
 
-def categorise(parsed):
+with tabs[0]:
+    st.write(parsed.astype(str))
     uncategorised = parsed[parsed["Category"] == "Other"]
     st.write(f"{len(uncategorised)} uncategorised transactions")
     options = set(categories.values())
@@ -60,5 +75,60 @@ def categorise(parsed):
             json.dump(categories, f, sort_keys=True, indent=2)
         st.experimental_rerun()
 
-if st.checkbox("Categorise transactions", value=False):
-    categorise(parsed)
+with tabs[1]:
+    with open("data/budget.json") as f:
+        budget = json.load(f)
+    today = datetime.now()
+    st.header(f"This month: {today.strftime('%B')}")
+    last_month = today - relativedelta(months=1)
+    subscriptions_last_month = parsed[
+        parsed["Date"].apply(
+            lambda x: x.year == last_month.year and x.month == last_month.month
+        )
+        & (parsed["Category"] == "Subscriptions")
+    ]
+    st.subheader("Subscriptions last month")
+    st.write(subscriptions_last_month.astype(str))
+    transactions_this_month = parsed[
+        parsed["Date"].apply(lambda x: x.year == today.year and x.month == today.month)
+    ]
+    excluded_transactions = (
+        (transactions_this_month["Amount"] > 0)
+        | (transactions_this_month["Category"] == "Rent")
+        | (transactions_this_month["Category"] == "Subscriptions")
+    )
+    st.subheader("Excluded transactions this month")
+    st.write(transactions_this_month[excluded_transactions].astype(str))
+    st.subheader("Included transactions this month")
+    included_transactions = transactions_this_month[~excluded_transactions]
+    st.write(included_transactions.sort_values("Amount").astype(str))
+
+    disposable_income = budget["Income"] - (
+        budget["Rent (total)"] - budget["Rent subsidy"]
+    )
+    first_of_month = today - timedelta(days=today.day - 1)
+    last_of_month = first_of_month + relativedelta(months=1) - timedelta(days=1)
+    daily_allowance = disposable_income * 1 / (last_of_month - first_of_month).days
+
+    st.subheader("Budget")
+    st.caption(
+        f"Disbosable income after rent: {disposable_income}. Daily allowance: £{daily_allowance:.0f}"
+    )
+    fig, ax = plt.subplots()
+    fig.autofmt_xdate(rotation=45)
+    ax.plot(
+        included_transactions["Date"],
+        np.cumsum(-included_transactions["Amount"]),
+        label="Expenses",
+    )
+
+    ratio_of_month_passed = included_transactions["Date"].apply(
+        lambda day: (day - first_of_month).days / (last_of_month - first_of_month).days
+    )
+    ax.plot(
+        included_transactions["Date"],
+        disposable_income * ratio_of_month_passed,
+        label="Budget",
+    )
+    ax.legend()
+    st.write(fig)

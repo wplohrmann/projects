@@ -2,3 +2,6 @@ pandas
 streamlit
 numpy
 dvc
+black
+matplotlib
+plotly
