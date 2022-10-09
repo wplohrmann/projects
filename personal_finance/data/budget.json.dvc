@@ -1,0 +1,4 @@
+outs:
+- md5: 641a6ade2a47deca1e62a249e3e53ce9
+  size: 74
+  path: budget.json
