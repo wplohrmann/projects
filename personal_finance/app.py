@@ -59,8 +59,8 @@ parsed = parse_transactions(transactions)
 tabs = st.tabs(["Categorise transactions", "Track spending this month"])
 
 with tabs[0]:
-    st.write(parsed.astype(str))
-    uncategorised = parsed[parsed["Category"] == "Other"]
+    uncategorised = parsed[parsed["Category"] == "Other"].sort_values("Date", ascending=False)
+    st.write(uncategorised.astype(str))
     st.write(f"{len(uncategorised)} uncategorised transactions")
     options = set(categories.values())
     example_row = uncategorised.iloc[0]
