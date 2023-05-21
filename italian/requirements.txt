@@ -1,0 +1,10 @@
+streamlit
+pandas
+pandas-stubs
+beautifulsoup4
+types-beautifulsoup4
+mypy
+requests
+types-requests
+tqdm
+types-tqdm
