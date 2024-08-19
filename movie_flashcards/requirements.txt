@@ -1,0 +1,6 @@
+pysrt
+streamlit
+nltk
+pandas
+numpy
+libretranslate
