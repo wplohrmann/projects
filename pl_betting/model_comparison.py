@@ -6,8 +6,6 @@ from xgboost import XGBClassifier
 
 from data import get_data, mapping
 
-x_train, y_train, x_test, y_test = get_data()
-
 
 class Simple:
     def fit(self, x, y):
@@ -54,6 +52,12 @@ class XGB:
             "home_points_last_5",
             "away_goals_last_5",
             "away_points_last_5",
+
+            # "home_goals_last_3",
+            # "home_points_last_3",
+            # "away_goals_last_3",
+            # "away_points_last_3",
+
             "B365H",
             "B365D",
             "B365A",
@@ -77,12 +81,18 @@ thresholds = np.linspace(0, 0.8, 9)
 get_xgb_name = lambda t: f"XGBoost ({t:.2f})"
 models = {
     **{
-        get_xgb_name(threshold): XGB(threshold=threshold, enable_categorical=True, max_depth=3)
+        get_xgb_name(threshold): XGB(
+            threshold=threshold, enable_categorical=True, max_depth=3
+        )
         for threshold in thresholds
     },
     "Baseline": Simple(),
     "Bet365": Bet365(),
 }
+
+x_train, y_train, x_test, y_test = get_data()
+print("Number of test games:", len(x_test))
+print("Number of training games:", len(x_train))
 
 metrics = defaultdict(dict)
 
@@ -98,7 +108,9 @@ for name, model in models.items():
     earnings_if_win = []
     for i, (_, row) in enumerate(x_test.iterrows()):
         probs_this_game = probs[i]
-        odds = np.array([row[f"B365{mapping[outcome_to_bet_on]}"] for outcome_to_bet_on in range(3)])
+        odds = np.array(
+            [row[f"B365{mapping[outcome_to_bet_on]}"] for outcome_to_bet_on in range(3)]
+        )
         evs = probs_this_game * (odds - 1) - (1 - probs_this_game)
         if model.should_bet(evs, odds, probs_this_game):
             num_bets += 1
@@ -116,7 +128,9 @@ for name, model in models.items():
     for i in range(num_samples):
         hypothetical_earnings = 0
         samples = np.random.uniform(low=0, high=1, size=len(win_probabilities))
-        for sample, win_probability, earning_if_win in zip(samples, win_probabilities, earnings_if_win):
+        for sample, win_probability, earning_if_win in zip(
+            samples, win_probabilities, earnings_if_win
+        ):
             if sample < win_probability:
                 hypothetical_earnings += earning_if_win
             else:
@@ -125,7 +139,6 @@ for name, model in models.items():
 
     worst_quartile_earnings = np.quantile(possible_earnings, 0.25)
     stddev_earnings = np.std(possible_earnings)
-
 
     metrics[name]["Accuracy"] = accuracy * 100
     # metrics[name]["Earnings"] = earnings
