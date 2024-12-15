@@ -5,6 +5,7 @@ import pandas as pd
 from xgboost import XGBClassifier
 
 from data import get_data, mapping
+from elo import EloOnly
 
 
 class Simple:
@@ -21,7 +22,7 @@ class Simple:
     def predict_proba(self, x):
         return np.array([self.probs] * len(x))
 
-    def should_bet(self, expected_values, odds, probabilities):
+    def should_bet(self, expected_values):
         return True
 
 
@@ -40,28 +41,36 @@ class Bet365:
         assert np.isclose(expected_values, 0).all()
         return raw_probs / np.sum(raw_probs, axis=1, keepdims=True)
 
-    def should_bet(self, expected_values, odds, probabilities):
+    def should_bet(self, expected_values):
         return True
 
-
 class XGB:
-    def __init__(self, threshold, **kwargs):
+    def __init__(self, threshold, odds_only=False, with_elo=False, **kwargs):
         self.model = XGBClassifier(**kwargs)
-        self.x_columns = [
-            "home_goals_last_5",
-            "home_points_last_5",
-            "away_goals_last_5",
-            "away_points_last_5",
+        if odds_only:
+            self.x_columns = [
+                "B365H",
+                "B365D",
+                "B365A",
+            ]
+        else:
+            self.x_columns = [
+                "home_goals_last_5",
+                "home_points_last_5",
+                "away_goals_last_5",
+                "away_points_last_5",
 
-            # "home_goals_last_3",
-            # "home_points_last_3",
-            # "away_goals_last_3",
-            # "away_points_last_3",
+                # "home_goals_last_3",
+                # "home_points_last_3",
+                # "away_goals_last_3",
+                # "away_points_last_3",
 
-            "B365H",
-            "B365D",
-            "B365A",
-        ]
+                "B365H",
+                "B365D",
+                "B365A",
+            ]
+        if with_elo:
+            self.x_columns.extend(["AwayElo", "HomeElo"])
         self.threshold = threshold
 
     def fit(self, x, y):
@@ -73,7 +82,7 @@ class XGB:
     def predict_proba(self, x):
         return self.model.predict_proba(x[self.x_columns])
 
-    def should_bet(self, expected_values, odds, probabilities):
+    def should_bet(self, expected_values):
         return expected_values.max() > self.threshold
 
 
@@ -82,11 +91,14 @@ get_xgb_name = lambda t: f"XGBoost ({t:.2f})"
 models = {
     **{
         get_xgb_name(threshold): XGB(
-            threshold=threshold, enable_categorical=True, max_depth=3
+            threshold=threshold, with_elo=True, enable_categorical=True, max_depth=3
         )
         for threshold in thresholds
     },
+    "Elo (k=20, home advantage=200)": EloOnly(k_factor=20, home_advantage=200),
+    "XGB + (no Elo)": XGB(0.0, with_elo=True, enable_categorical=True, max_depth=3),
     "Baseline": Simple(),
+    "XGB (odds only)": XGB(0.0, odds_only=True),
     "Bet365": Bet365(),
 }
 
@@ -112,7 +124,7 @@ for name, model in models.items():
             [row[f"B365{mapping[outcome_to_bet_on]}"] for outcome_to_bet_on in range(3)]
         )
         evs = probs_this_game * (odds - 1) - (1 - probs_this_game)
-        if model.should_bet(evs, odds, probs_this_game):
+        if model.should_bet(evs):
             num_bets += 1
             outcome_to_bet_on = np.argmax(evs)
             actual_outcome = y_test.iloc[i]
@@ -140,6 +152,7 @@ for name, model in models.items():
     worst_quartile_earnings = np.quantile(possible_earnings, 0.25)
     stddev_earnings = np.std(possible_earnings)
 
+    # TODO: Add the Brier score
     metrics[name]["Accuracy"] = accuracy * 100
     # metrics[name]["Earnings"] = earnings
     metrics[name]["Predicted ROI (%)"] = predicted_earnings / num_bets * 100

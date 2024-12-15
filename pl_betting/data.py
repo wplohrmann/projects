@@ -1,7 +1,10 @@
+from collections import defaultdict
 import pandas as pd
 
 
 import os
+
+from elo import EloOnly
 
 mapping = ["H", "D", "A"]
 
@@ -12,6 +15,7 @@ def get_data():
     y = df["FTR"].apply(lambda x: mapping.index(x))
     df = compute_current_form_last_n_games(df, 5)
     df = compute_current_form_last_n_games(df, 3)
+    df = compute_elo(df)
 
     x = df.drop(columns=["FTR", "FTHG", "FTAG"])
 
@@ -39,6 +43,18 @@ def get_raw_data() -> pd.DataFrame:
     df["Referee"] = df["Referee"].astype("category")
     df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
     df["days_since_first_game"] = (df["Date"] - df["Date"].min()).dt.days
+    return df
+
+def compute_elo(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    elo_model = EloOnly(k_factor=20, home_advantage=200)
+    y = df["FTR"].apply(lambda x: mapping.index(x))
+    pregame_elos = elo_model.fit(df, y)
+    assert list(df.index) == list(range(len(df)))
+    for i, (home_elo, away_elo) in enumerate(pregame_elos):
+        df.loc[i, "HomeElo"] = home_elo
+        df.loc[i, "AwayElo"] = away_elo
+    
     return df
 
 
