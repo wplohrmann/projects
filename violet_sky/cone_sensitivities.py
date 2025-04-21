@@ -28,35 +28,34 @@ plt.title("Cone sensitivities")
 plt.legend()
 plt.show()
 
-cie_rgb_basis = np.array([650, 530, 460])
-a = np.zeros((3, 3))
-for j, lamda in enumerate(cie_rgb_basis):
-    for i, cone in enumerate(cones):
-        x = df["wavelength"].values
-        y = df[cone].values
-        splev = interp1d(x, y, kind="linear")
-        a[i, j] = splev(lamda)
+primaries = np.array([
+    [770.49, 70.13, 0.06174579],
+    [536.63, 33.61, 0.01118286],
+    [430.63, 37.56, 0.01101181],
+])
 
-print(np.round(a, 2))
+spectrum_r = primaries[0, 2] * np.exp(-0.5 * ((df["wavelength"] - primaries[0, 0]) / primaries[0, 1]) ** 2)
+spectrum_g = primaries[1, 2] * np.exp(-0.5 * ((df["wavelength"] - primaries[1, 0]) / primaries[1, 1]) ** 2)
+spectrum_b = primaries[2, 2] * np.exp(-0.5 * ((df["wavelength"] - primaries[2, 0]) / primaries[2, 1]) ** 2)
 
-wavelengths = np.linspace(df["wavelength"].min(), df["wavelength"].max(), 1000)
-excitations = np.zeros((500, len(wavelengths), 3))
-for i, cone in enumerate(cones):
-    x = df["wavelength"].values
-    y = df[cone].values
-    splev = interp1d(x, y, kind="linear")
-    for j, lamda in enumerate(wavelengths):
-        excitations[:, j, i] = splev(lamda)
+plt.plot(df["wavelength"], spectrum_r, label="Red", c="r")
+plt.plot(df["wavelength"], spectrum_g, label="Green", c="g")
+plt.plot(df["wavelength"], spectrum_b, label="Blue", c="b")
+plt.show()
 
-rgbs = np.zeros(excitations.shape)
-inv = np.linalg.inv(a)
-for j in range(excitations.shape[1]):
-    rgbs[:, j] = inv @ excitations[0, j]
+a = np.array([
+    [np.sum(df[cone].values * spectrum) for cone in cones]
+    for spectrum in [spectrum_r, spectrum_g, spectrum_b]
+])
+inv = np.linalg.inv(a.T)
 
-below_0 = np.any(rgbs < 0, axis=2)
-rgbs[below_0] -= np.min(rgbs[below_0], axis=-1, keepdims=True)
-rgbs /= np.max(rgbs)
-rgbs = np.where(rgbs <= 0.0031308, 12.92 * rgbs, 1.055 * np.power(rgbs, 1/2.4) - 0.055)
-plt.imshow(rgbs, extent=[wavelengths[0], wavelengths[-1], 0, 50])
+rgb = (inv @ df[["Long", "Medium", "Short"]].values.T).T
+rgb /= rgb.max()
+
+plt.plot(df["wavelength"], rgb[:, 0], c="r", label="R")
+plt.plot(df["wavelength"], rgb[:, 1], c="g", label="G")
+plt.plot(df["wavelength"], rgb[:, 2], c="b", label="B")
+plt.legend()
 plt.xlabel("Wavelength (nm)")
 plt.show()
+

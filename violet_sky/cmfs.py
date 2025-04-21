@@ -3,6 +3,7 @@ from sympy import symbols, Matrix, solve
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
 
 black = "#1e1e1e"
 white = "#dbdbdb"
@@ -150,3 +151,41 @@ plt.legend()
 plt.xlabel("x")
 plt.ylabel("y")
 plt.show()
+
+
+# Primary spectra
+def fit_spectrum_to_xyz(basis: np.ndarray) -> np.ndarray:
+    def objective(params, return_spectrum=False):
+        lambda_0, sigma = params
+        spectrum = np.exp(-0.5 * ((wavelengths - lambda_0) / sigma) ** 2)
+        xyz = df[["X", "Y", "Z"]].values
+        tristimulus = (xyz * spectrum[:, None]).sum(axis=0)
+        xy = (tristimulus / tristimulus.sum())[:2]
+        if return_spectrum:
+            print(f"Desired xy: {basis[:2]}. Actual xy: {xy}")
+            print(f"lambda_0 = {lambda_0.item():.2f}, sigma={sigma:.2f}")
+            return spectrum
+        return np.sum((xy - basis[:2]) ** 2)
+    res = minimize(objective, [500, 50], bounds=((wavelengths.min(), wavelengths.max()), (1, 100)))
+    return objective(res.x, return_spectrum=True)
+
+primary_spectra = []
+for c, b in zip(["r", "g", "b"], basis):
+    spectrum = fit_spectrum_to_xyz(b)
+    primary_spectra.append(spectrum)
+    plt.plot(df["wavelength"], spectrum, c=c)
+primary_spectra = np.array(primary_spectra)
+
+plt.xlabel("Wavelength (nm)")
+plt.ylabel("P(lambda)")
+plt.title("Candidate primary spectra")
+plt.show()
+
+xyz = df[["X", "Y", "Z"]].values
+unscaled_xyz = []
+for spectrum in primary_spectra:
+    tristimulus = (xyz * spectrum[:, None]).sum(axis=0)
+    unscaled_xyz.append(tristimulus)
+
+unscaled_xyz = np.array(unscaled_xyz)
+scales = np.linalg.solve(unscaled_xyz.T, whitepoint_d_65[0])
